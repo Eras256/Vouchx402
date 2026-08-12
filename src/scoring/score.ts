@@ -1,0 +1,109 @@
+import { isAddress } from "viem";
+import { publicClientFor } from "../lib/chain";
+import { etherscanApiBaseFor, env, type NetworkName } from "../lib/env";
+import flaggedList from "./flagged-addresses.json";
+
+export interface RiskSignals {
+  walletAgeDays: number;
+  txCount: number;
+  uniqueContractInteractions: number;
+  flagged: boolean;
+}
+
+export interface RiskResult {
+  score: number;
+  signals: RiskSignals;
+}
+
+interface EtherscanTx {
+  timeStamp: string;
+  to: string;
+  from: string;
+  input: string;
+}
+
+/**
+ * Pulls the address's earliest transaction via the BaseScan/Etherscan
+ * "account txlist" API (sorted ascending, one result). Plain JSON-RPC has
+ * no "first tx" query — this is why an explorer API + key is needed for
+ * that specific signal. Returns [] if no key is configured or the address
+ * has no history (fresh wallet).
+ */
+async function fetchTxHistory(network: NetworkName, address: string, max = 200): Promise<EtherscanTx[]> {
+  if (!env.etherscanApiKey) return [];
+
+  const url = new URL(etherscanApiBaseFor(network));
+  url.searchParams.set("module", "account");
+  url.searchParams.set("action", "txlist");
+  url.searchParams.set("address", address);
+  url.searchParams.set("startblock", "0");
+  url.searchParams.set("endblock", "99999999");
+  url.searchParams.set("page", "1");
+  url.searchParams.set("offset", String(max));
+  url.searchParams.set("sort", "asc");
+  url.searchParams.set("apikey", env.etherscanApiKey);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return [];
+  const body = (await res.json()) as { status: string; result: EtherscanTx[] | string };
+  if (body.status !== "1" || !Array.isArray(body.result)) return [];
+  return body.result;
+}
+
+function isFlagged(address: string): boolean {
+  const lower = address.toLowerCase();
+  return (flaggedList.addresses as string[]).some((a) => a.toLowerCase() === lower);
+}
+
+/**
+ * v0 risk heuristic. NOT a complete risk model — see docs/TECHNICAL_SPEC.md
+ * "Known v0 limitation" framing for the scoring signals themselves (the
+ * flag list is bundled separately and versioned; see flagged-addresses.json).
+ *
+ * `score` is 0-100 risk (higher = riskier). Age/activity/diversity reduce
+ * risk (an established, active, diverse wallet looks less like a fresh
+ * throwaway/sybil address); flagged membership forces risk to the top of
+ * the range regardless of the other signals.
+ */
+export async function computeRiskScore(network: NetworkName, address: string): Promise<RiskResult> {
+  if (!isAddress(address)) {
+    throw new Error(`Invalid address: ${address}`);
+  }
+
+  const client = publicClientFor(network);
+
+  const [txCount, history] = await Promise.all([
+    client.getTransactionCount({ address: address as `0x${string}` }),
+    fetchTxHistory(network, address),
+  ]);
+
+  let walletAgeDays = 0;
+  if (history.length > 0) {
+    const firstTs = Number(history[0].timeStamp) * 1000;
+    walletAgeDays = Math.max(0, Math.floor((Date.now() - firstTs) / 86_400_000));
+  }
+
+  const uniqueTo = new Set<string>();
+  for (const tx of history) {
+    if (tx.to && tx.input && tx.input !== "0x") {
+      uniqueTo.add(tx.to.toLowerCase());
+    }
+  }
+  const uniqueContractInteractions = uniqueTo.size;
+
+  const flagged = isFlagged(address);
+
+  const signals: RiskSignals = { walletAgeDays, txCount, uniqueContractInteractions, flagged };
+
+  // Trust sub-score (0-100), each signal capped so no single one dominates.
+  const ageTrust = Math.min(40, walletAgeDays / 3); // ~120+ days -> full 40
+  const activityTrust = Math.min(30, txCount);
+  const diversityTrust = Math.min(30, uniqueContractInteractions * 3);
+  const trust = Math.min(100, ageTrust + activityTrust + diversityTrust);
+
+  let score = Math.round(100 - trust);
+  if (flagged) score = Math.max(score, 95);
+  score = Math.max(0, Math.min(100, score));
+
+  return { score, signals };
+}
