@@ -298,6 +298,14 @@ graceful shutdown fully solves — a request that's still running at the
 Add a credit card to the Fly account (`neuralsol7@gmail.com`) to lift the
 trial cap for real reliability.
 
+Re-ran the same live paid request after the graceful-shutdown redeploy:
+clean `200`, real `attestationUid`, and `/v1/metrics` moved by exactly
+what was expected (`totalRequestsServed`/`attestationCount` +1 for the
+successful run; the earlier killed attempt only shows up in
+`totalVolumeUsdc`/`uniquePayers`, which is the correct distinction —
+payment was genuinely processed even though nothing was ever delivered
+for it). Phase 5's hosting blocker is resolved.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
