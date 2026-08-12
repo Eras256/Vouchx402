@@ -1,7 +1,8 @@
 import { EAS, SchemaRegistry, ZERO_ADDRESS } from "@ethereum-attestation-service/eas-sdk";
-import { JsonRpcProvider, Wallet as EthersWallet } from "ethers";
+import { JsonRpcProvider, Wallet as EthersWallet, type TransactionRequest, type TransactionResponse } from "ethers";
 import { loadDeployerAccount } from "./keystore";
 import { rpcUrlFor, type NetworkName } from "./env";
+import { withAttribution } from "./attribution";
 
 /**
  * EAS is natively deployed on Base (and Base Sepolia) as an OP Stack
@@ -12,6 +13,19 @@ import { rpcUrlFor, type NetworkName } from "./env";
 export const EAS_ADDRESS = "0x4200000000000000000000000000000000000021";
 export const SCHEMA_REGISTRY_ADDRESS = "0x4200000000000000000000000000000000000020";
 
+/**
+ * Every transaction Vouch402's own wallet sends goes through this signer
+ * (schema registration, attestations) — overriding `sendTransaction` here
+ * is the "client-level, not per-call" attribution point docs/TECHNICAL_SPEC.md
+ * requires, without needing to reimplement what the EAS SDK builds
+ * internally for each contract call.
+ */
+class AttributedWallet extends EthersWallet {
+  override sendTransaction(tx: TransactionRequest): Promise<TransactionResponse> {
+    return super.sendTransaction({ ...tx, data: withAttribution((tx.data as string) ?? "0x") });
+  }
+}
+
 let cachedSigner: { network: NetworkName; signer: EthersWallet } | undefined;
 
 /** ethers Signer for the deployer wallet, connected to the given network — used for every attest/register call. */
@@ -19,7 +33,7 @@ export function getEasSigner(network: NetworkName): EthersWallet {
   if (cachedSigner?.network === network) return cachedSigner.signer;
   const { privateKey } = loadDeployerAccount();
   const provider = new JsonRpcProvider(rpcUrlFor(network));
-  const signer = new EthersWallet(privateKey, provider);
+  const signer = new AttributedWallet(privateKey, provider);
   cachedSigner = { network, signer };
   return signer;
 }

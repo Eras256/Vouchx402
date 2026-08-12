@@ -60,8 +60,16 @@ export function explorerBaseFor(network: NetworkName): string {
   return network === "base" ? "https://basescan.org" : "https://sepolia.basescan.org";
 }
 
-export function etherscanApiBaseFor(network: NetworkName): string {
-  return network === "base" ? "https://api.basescan.org/api" : "https://api-sepolia.basescan.org/api";
+/**
+ * Etherscan's per-chain V1 endpoints (api.basescan.org/api,
+ * api-sepolia.basescan.org/api) are deprecated — confirmed directly (a
+ * live call returned `{"status":"0","message":"NOTOK","result":"...
+ * deprecated V1 endpoint..."}`), not assumed. V2 unifies every chain
+ * under one host with `chainid` selecting the network; Base's chain ID
+ * doubles as the Etherscan V2 chainid, no separate mapping needed.
+ */
+export function etherscanApiBaseFor(_network: NetworkName): string {
+  return "https://api.etherscan.io/v2/api";
 }
 
 // These two read `process.env` live (not the `env` snapshot above) because

@@ -1,6 +1,6 @@
 import { isAddress } from "viem";
 import { publicClientFor } from "../lib/chain";
-import { etherscanApiBaseFor, env, type NetworkName } from "../lib/env";
+import { etherscanApiBaseFor, chainIdFor, env, type NetworkName } from "../lib/env";
 import flaggedList from "./flagged-addresses.json";
 
 export interface RiskSignals {
@@ -33,6 +33,7 @@ async function fetchTxHistory(network: NetworkName, address: string, max = 200):
   if (!env.etherscanApiKey) return [];
 
   const url = new URL(etherscanApiBaseFor(network));
+  url.searchParams.set("chainid", String(chainIdFor(network)));
   url.searchParams.set("module", "account");
   url.searchParams.set("action", "txlist");
   url.searchParams.set("address", address);

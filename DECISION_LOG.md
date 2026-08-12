@@ -120,6 +120,51 @@ Production use should sit behind a dedicated RPC provider, per the
 build-on-base skill's own guidance — that's an infra choice for Phase 3+
 deployment, not a code fix.
 
+## 2026-08-12 — Builder Code attribution: signer-level, not per-call
+
+Registered Vouch402's deployer wallet for a Builder Code via the
+build-on-base skill's `scripts/register.sh` (`bc_zt9va432`, stored in
+`src/constants/builderCode.ts` per that skill's own convention — not a
+secret, meant to be version-controlled). One correction to the skill's
+own docs: the live API returns `builderCode` (camelCase) in its JSON
+response, not `builder_code` as documented — confirmed by calling it
+directly after `register.sh`'s parsing came back empty.
+
+Vouch402's on-chain writes (schema registration, attestations) go through
+the EAS SDK, which builds and sends its own transactions internally —
+there's no per-call hook to append calldata after the fact. Instead of
+reimplementing the SDK's request-building to attach the suffix per call,
+`AttributedWallet` (src/lib/eas.ts) subclasses the ethers `Wallet` used as
+the EAS signer and overrides `sendTransaction` to append the ERC-8021
+suffix to every transaction that signer ever sends — satisfies "client
+level, not per-call" from both the build-on-base skill's guidance and
+docs/TECHNICAL_SPEC.md, without depending on EAS SDK internals.
+
+## 2026-08-12 — Etherscan V1 API is deprecated; migrated to V2
+
+While spot-checking a transaction's calldata, a live call to
+`api-sepolia.basescan.org/api` returned `{"status":"0","message":"NOTOK",
+"result":"...deprecated V1 endpoint..."}` — the scoring module
+(src/scoring/score.ts) was built against that same deprecated per-chain
+endpoint. Migrated `etherscanApiBaseFor()` to the unified V2 host
+(`api.etherscan.io/v2/api`) with an explicit `chainid` param (Base's chain
+ID doubles as the Etherscan V2 chainid — no separate mapping). Verified
+the fix against the live endpoint (got "Invalid API Key" with a
+placeholder key, not the deprecated-endpoint error).
+
+**Still open**: no `ETHERSCAN_API_KEY` is configured yet, so
+`fetchTxHistory()` short-circuits to `[]` and two of the four scoring
+signals (`walletAgeDays`, `uniqueContractInteractions`) are always 0 —
+not just for genuinely fresh wallets. Scores returned so far are real
+computations, but running on a degraded signal set. Needs a free key from
+etherscan.io (same account system as BaseScan, confirmed in
+deploy-contracts.md) — I don't have browser access to get one myself.
+
 ## Open questions
 
-_(none currently blocking)_
+- Need `ETHERSCAN_API_KEY` from the user (or explicit sign-off to keep
+  running with 2 of 4 scoring signals structurally zeroed) before the
+  scoring output is a genuine v0 model rather than a partially-degraded
+  one. Not blocking Phase 3's gate (payment + attestation correctness
+  don't depend on scoring accuracy), but should be resolved before this
+  is presented as "live."
