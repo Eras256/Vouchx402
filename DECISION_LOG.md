@@ -408,6 +408,24 @@ handled as an encrypted Foundry keystore
 (`DEPLOYER_KEYSTORE_JSON`/`_PASSWORD`), never a plaintext key — adding a
 `PRIVATE_KEY=` variable would be a regression from that.
 
+## 2026-08-12 — Mainnet treasury address confirmed and set
+
+`X402_PAY_TO_ADDRESS_MAINNET` is now `0xb440b82Fb537A56eD8FC045Da622B469E88Fd2bB`
+— the user's own wallet, confirmed explicitly, not the generated signer
+wallet. Verified `payToFor("base")` resolves to it (and `payToFor("base-
+sepolia")` is unaffected) before treating this as done, not just from
+having written the value.
+
+Funding status, checked on-chain directly rather than trusting the
+description of what was sent: 3 USDC landed correctly on the treasury
+address. The ETH (~100 MXN, intended for the *signer* wallet
+`0x53a79B...263b0` for gas) hadn't landed on either Base or Ethereum L1
+at check time — most likely still processing on the exchange side, not a
+wrong-network send (confirmed 0 balance on L1 too, which would show up
+immediately if it had gone to the wrong chain). The signer wallet still
+has 0 ETH, so it can't sign anything on mainnet yet — schema registration
+and the Phase 3 gate transaction are blocked until it arrives.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
