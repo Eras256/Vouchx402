@@ -100,7 +100,23 @@ export interface Quote {
   consumedAt: number | null;
 }
 
+/**
+ * `GET /v1/risk-score/:address` is public and unpaid on the first call —
+ * every hit (including repeated/automated ones with no payment ever
+ * following) inserts a quote row, with nothing else in the codebase ever
+ * deleting one. Unbounded on a public endpoint: sustained hammering grows
+ * the table indefinitely on a small (1GB) volume. Swept opportunistically
+ * on every insert rather than a separate cron/scheduler — self-throttles
+ * under any traffic pattern, no extra moving parts.
+ */
+function deleteExpiredUnconsumedQuotes() {
+  getDb()
+    .prepare(`DELETE FROM quotes WHERE consumed_at IS NULL AND expires_at < ?`)
+    .run(Date.now());
+}
+
 export function insertQuote(q: Omit<Quote, "consumedAt">) {
+  deleteExpiredUnconsumedQuotes();
   getDb()
     .prepare(
       `INSERT INTO quotes (resource_id, address, network, pay_to, amount_atomic, asset, created_at, expires_at)

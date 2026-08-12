@@ -320,6 +320,33 @@ and only surfacing the real error once retries are exhausted. Re-ran
 attestation → independently resolved via EAS → dispute filed and
 resolved → `/v1/metrics` reflecting all of it. Phase 6 gate met.
 
+## 2026-08-12 — Hardening pass: malformed-input 500s, unbounded quote growth
+
+Three issues found by reading the actual failure paths, not from a
+specific bug report:
+
+- `GET /v1/risk-score/:address` mapped *any* non-`PaymentVerificationError`
+  thrown while decoding the `X-PAYMENT` header into a bare 500 "Internal
+  error" — including a client sending garbage in the header, which isn't
+  a server fault. Decoding is now a separate try/catch, mapped to 400.
+- `POST /v1/disputes` had the same shape of bug: a malformed `signature`
+  made `recoverMessageAddress` throw a raw viem error that fell through
+  to the catch-all 500. Now caught and re-thrown as `DisputeError` (400).
+- `GET /v1/risk-score/:address` is public and unpaid on the *first* call
+  — every hit inserts a `quotes` row, and nothing ever deleted one.
+  Unbounded growth on a public endpoint against a small (1GB) volume:
+  sustained hammering (or just a crawler) would eventually fill the disk.
+  Swept opportunistically in `insertQuote()` itself (delete expired,
+  unconsumed rows before inserting the new one) rather than adding a
+  cron/scheduler — self-throttles under any traffic shape, no new moving
+  parts.
+
+Also extracted `scoreFromSignals()` (src/scoring/score.ts) as a pure
+function separate from the network-fetching logic around it, specifically
+so the scoring formula has real unit test coverage (test/score.test.ts)
+that doesn't inherit the public Base Sepolia RPC's flakiness the rest of
+this suite is stuck with.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

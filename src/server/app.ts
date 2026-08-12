@@ -47,9 +47,21 @@ export function createApp(): Express {
       return;
     }
 
+    // Decoding is a client-input concern (malformed header -> 400), kept
+    // separate from payment verification (a domain failure -> 402) —
+    // previously both landed in one catch block, so a garbage X-PAYMENT
+    // header surfaced as a bare 500 "Internal error" instead of a clean
+    // 400. The request itself was never broken; the caller's input was.
+    let proof;
+    try {
+      proof = decodePaymentHeader(paymentHeader);
+    } catch {
+      res.status(400).json({ error: "Malformed X-PAYMENT header: expected base64 JSON { resourceId, txHash, payer }" });
+      return;
+    }
+
     let verified;
     try {
-      const proof = decodePaymentHeader(paymentHeader);
       verified = await verifyPayment(network, proof);
 
       if (verified.address.toLowerCase() !== address.toLowerCase()) {

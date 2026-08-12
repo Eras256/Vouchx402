@@ -57,14 +57,33 @@ function isFlagged(address: string): boolean {
 }
 
 /**
- * v0 risk heuristic. NOT a complete risk model — see docs/TECHNICAL_SPEC.md
- * "Known v0 limitation" framing for the scoring signals themselves (the
- * flag list is bundled separately and versioned; see flagged-addresses.json).
+ * Pure scoring formula, deliberately separated from the network-fetching
+ * logic below so it's unit-testable without an RPC/BaseScan dependency —
+ * everything else in this codebase that touches the network inherits the
+ * public Base Sepolia RPC's observed flakiness (see DECISION_LOG.md); this
+ * function can't, by construction.
  *
  * `score` is 0-100 risk (higher = riskier). Age/activity/diversity reduce
  * risk (an established, active, diverse wallet looks less like a fresh
  * throwaway/sybil address); flagged membership forces risk to the top of
  * the range regardless of the other signals.
+ */
+export function scoreFromSignals(signals: RiskSignals): number {
+  // Trust sub-score (0-100), each signal capped so no single one dominates.
+  const ageTrust = Math.min(40, signals.walletAgeDays / 3); // ~120+ days -> full 40
+  const activityTrust = Math.min(30, signals.txCount);
+  const diversityTrust = Math.min(30, signals.uniqueContractInteractions * 3);
+  const trust = Math.min(100, ageTrust + activityTrust + diversityTrust);
+
+  let score = Math.round(100 - trust);
+  if (signals.flagged) score = Math.max(score, 95);
+  return Math.max(0, Math.min(100, score));
+}
+
+/**
+ * v0 risk heuristic. NOT a complete risk model — see docs/TECHNICAL_SPEC.md
+ * "Known v0 limitation" framing for the scoring signals themselves (the
+ * flag list is bundled separately and versioned; see flagged-addresses.json).
  */
 export async function computeRiskScore(network: NetworkName, address: string): Promise<RiskResult> {
   if (!isAddress(address)) {
@@ -96,15 +115,5 @@ export async function computeRiskScore(network: NetworkName, address: string): P
 
   const signals: RiskSignals = { walletAgeDays, txCount, uniqueContractInteractions, flagged };
 
-  // Trust sub-score (0-100), each signal capped so no single one dominates.
-  const ageTrust = Math.min(40, walletAgeDays / 3); // ~120+ days -> full 40
-  const activityTrust = Math.min(30, txCount);
-  const diversityTrust = Math.min(30, uniqueContractInteractions * 3);
-  const trust = Math.min(100, ageTrust + activityTrust + diversityTrust);
-
-  let score = Math.round(100 - trust);
-  if (flagged) score = Math.max(score, 95);
-  score = Math.max(0, Math.min(100, score));
-
-  return { score, signals };
+  return { score: scoreFromSignals(signals), signals };
 }

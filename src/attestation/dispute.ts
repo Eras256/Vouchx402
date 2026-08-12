@@ -45,7 +45,15 @@ export async function submitDispute(params: SubmitDisputeParams): Promise<{ uid:
   }
 
   const message = disputeMessage(params.refUID, params.reasonCode, params.details);
-  const disputant = await recoverMessageAddress({ message, signature: params.signature });
+  let disputant: string;
+  try {
+    disputant = await recoverMessageAddress({ message, signature: params.signature });
+  } catch {
+    // A malformed signature is a client-input problem (400), not a server
+    // fault — previously this threw a raw viem error straight through to
+    // app.ts's catch-all, surfacing as a bare 500 "Internal error".
+    throw new DisputeError("Malformed signature: could not recover a signer address");
+  }
 
   const eas = getEas(params.network);
   // Retried: a dispute filed soon after its fulfillment can otherwise race
