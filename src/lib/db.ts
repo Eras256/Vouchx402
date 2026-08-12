@@ -58,7 +58,8 @@ function migrate(database: DatabaseSync) {
       payer           TEXT NOT NULL,
       tx_hash         TEXT NOT NULL,
       score           INTEGER NOT NULL,
-      served_at       INTEGER NOT NULL
+      served_at       INTEGER NOT NULL,
+      network         TEXT
     );
 
     -- Phase 4 — every attestation and dispute this server has emitted,
@@ -83,6 +84,32 @@ function migrate(database: DatabaseSync) {
       network         TEXT NOT NULL,
       created_at      INTEGER NOT NULL
     );
+  `);
+
+  addRequestsServedNetworkColumn(database);
+}
+
+/**
+ * `requests_served` predates network-aware metrics — an existing database
+ * (the live production one included) has the table without a `network`
+ * column, and `CREATE TABLE IF NOT EXISTS` doesn't retroactively add one.
+ * Guarded ALTER TABLE + backfill from `processed_payments` (same
+ * resource_id, already has network recorded) so existing rows aren't
+ * left NULL. Runs on every startup; only does anything the first time.
+ */
+function addRequestsServedNetworkColumn(database: DatabaseSync) {
+  const columns = database.prepare(`PRAGMA table_info(requests_served)`).all() as { name: string }[];
+  const hasNetwork = columns.some((c) => c.name === "network");
+  if (hasNetwork) return;
+
+  database.exec(`ALTER TABLE requests_served ADD COLUMN network TEXT;`);
+  database.exec(`
+    UPDATE requests_served
+    SET network = (
+      SELECT network FROM processed_payments
+      WHERE processed_payments.resource_id = requests_served.resource_id
+    )
+    WHERE network IS NULL;
   `);
 }
 
@@ -182,13 +209,14 @@ export function recordRequestServed(params: {
   payer: string;
   txHash: string;
   score: number;
+  network: string;
 }) {
   getDb()
     .prepare(
-      `INSERT INTO requests_served (resource_id, address, payer, tx_hash, score, served_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO requests_served (resource_id, address, payer, tx_hash, score, served_at, network)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(params.resourceId, params.address, params.payer, params.txHash, params.score, Date.now());
+    .run(params.resourceId, params.address, params.payer, params.txHash, params.score, Date.now(), params.network);
 }
 
 // ---- Attestations & disputes (for /v1/metrics) ----
@@ -228,26 +256,122 @@ export interface Metrics {
  * docs/TECHNICAL_SPEC.md ("real, not estimated"). `totalVolumeAtomic` is
  * summed in JS via BigInt (not SQL SUM) to avoid any ambiguity in how
  * node:sqlite's dynamic typing hands back large integers.
+ *
+ * `network`, when given, filters every field to that network only. Omit
+ * it to get the original unfiltered (all-networks) behavior — kept for
+ * backward compatibility with anything already calling this without a
+ * network in mind. The frontend (Phase 7) always passes one explicitly:
+ * the pre-mainnet-cutover Sepolia test data living in this same database
+ * would otherwise silently mix into what's shown as live mainnet numbers
+ * — confirmed this actually happened, not a hypothetical (see
+ * DECISION_LOG.md).
  */
-export function getMetrics(): Metrics {
+export function getMetrics(network?: string): Metrics {
   const database = getDb();
+  const where = network ? `WHERE network = ?` : "";
+  const args = network ? [network] : [];
 
   const uniquePayers = (
-    database.prepare(`SELECT COUNT(DISTINCT payer) as c FROM processed_payments`).get() as { c: number }
+    database.prepare(`SELECT COUNT(DISTINCT payer) as c FROM processed_payments ${where}`).get(...args) as {
+      c: number;
+    }
   ).c;
 
   const totalRequestsServed = (
-    database.prepare(`SELECT COUNT(*) as c FROM requests_served`).get() as { c: number }
+    database.prepare(`SELECT COUNT(*) as c FROM requests_served ${where}`).get(...args) as { c: number }
   ).c;
 
-  const amounts = database.prepare(`SELECT amount_atomic FROM processed_payments`).all() as { amount_atomic: string }[];
+  const amounts = database
+    .prepare(`SELECT amount_atomic FROM processed_payments ${where}`)
+    .all(...args) as { amount_atomic: string }[];
   const totalVolumeAtomic = amounts.reduce((sum, row) => sum + BigInt(row.amount_atomic), 0n).toString();
 
   const attestationCount = (
-    database.prepare(`SELECT COUNT(*) as c FROM attestations`).get() as { c: number }
+    database.prepare(`SELECT COUNT(*) as c FROM attestations ${where}`).get(...args) as { c: number }
   ).c;
 
-  const disputeCount = (database.prepare(`SELECT COUNT(*) as c FROM disputes`).get() as { c: number }).c;
+  const disputeCount = (
+    database.prepare(`SELECT COUNT(*) as c FROM disputes ${where}`).get(...args) as { c: number }
+  ).c;
 
   return { uniquePayers, totalRequestsServed, totalVolumeAtomic, attestationCount, disputeCount };
+}
+
+// ---- Recent activity (for the Phase 7 activity feed) ----
+
+export type ActivityItem =
+  | {
+      kind: "fulfillment";
+      uid: string;
+      status: number;
+      payer: string;
+      payee: string;
+      network: string;
+      createdAt: number;
+    }
+  | {
+      kind: "dispute";
+      uid: string;
+      refUid: string;
+      disputant: string;
+      reasonCode: number;
+      network: string;
+      createdAt: number;
+    };
+
+/**
+ * Merges `attestations` and `disputes` into one reverse-chronological
+ * feed. Both tables are small (one row per real on-chain event) so a
+ * plain UNION + sort in SQL is fine at this scale — no need for a
+ * denormalized activity table.
+ */
+export function getRecentActivity(network?: string, limit = 20): ActivityItem[] {
+  const database = getDb();
+  const where = network ? `WHERE network = ?` : "";
+  const args = network ? [network, limit] : [limit];
+
+  const fulfillments = database
+    .prepare(
+      `SELECT uid, status, payer, payee, network, created_at FROM attestations ${where}
+       ORDER BY created_at DESC LIMIT ?`
+    )
+    .all(...args) as { uid: string; status: number; payer: string; payee: string; network: string; created_at: number }[];
+
+  const disputes = database
+    .prepare(
+      `SELECT uid, ref_uid, disputant, reason_code, network, created_at FROM disputes ${where}
+       ORDER BY created_at DESC LIMIT ?`
+    )
+    .all(...args) as {
+    uid: string;
+    ref_uid: string;
+    disputant: string;
+    reason_code: number;
+    network: string;
+    created_at: number;
+  }[];
+
+  const items: ActivityItem[] = [
+    ...fulfillments.map((f) => ({
+      kind: "fulfillment" as const,
+      uid: f.uid,
+      status: f.status,
+      payer: f.payer,
+      payee: f.payee,
+      network: f.network,
+      createdAt: f.created_at,
+    })),
+    ...disputes.map((d) => ({
+      kind: "dispute" as const,
+      uid: d.uid,
+      refUid: d.ref_uid,
+      disputant: d.disputant,
+      reasonCode: d.reason_code,
+      network: d.network,
+      createdAt: d.created_at,
+    })),
+  ];
+
+  items.sort((a, b) => b.createdAt - a.createdAt);
+  return items.slice(0, limit);
 }

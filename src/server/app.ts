@@ -4,9 +4,14 @@ import { defaultNetwork } from "../lib/chain";
 import { computeRiskScore } from "../scoring/score";
 import { issueQuote, decodePaymentHeader } from "./x402";
 import { verifyPayment, PaymentVerificationError } from "./payment";
-import { recordRequestServed, getMetrics } from "../lib/db";
+import { recordRequestServed, getMetrics, getRecentActivity } from "../lib/db";
 import { attestFulfillment, FulfillmentStatus } from "../attestation/middleware";
 import { submitDispute, DisputeError, DisputeReasonCode } from "../attestation/dispute";
+import { easExplorerAttestationUrl, type NetworkName } from "../lib/env";
+
+function isNetworkName(v: unknown): v is NetworkName {
+  return v === "base" || v === "base-sepolia";
+}
 
 export function createApp(): Express {
   const app = express();
@@ -104,6 +109,7 @@ export function createApp(): Express {
         payer: verified.payer,
         txHash: verified.txHash,
         score,
+        network,
       });
 
       res.status(200).json({ ...responsePayload, attestationUid });
@@ -128,14 +134,38 @@ export function createApp(): Express {
     }
   });
 
-  app.get("/v1/metrics", (_req, res) => {
-    const m = getMetrics();
+  app.get("/v1/metrics", (req, res) => {
+    // ?network=base|base-sepolia filters to that network; omitted keeps
+    // the original all-networks behavior (see getMetrics() doc comment).
+    const { network: networkParam } = req.query;
+    if (networkParam !== undefined && !isNetworkName(networkParam)) {
+      res.status(400).json({ error: "network must be 'base' or 'base-sepolia'" });
+      return;
+    }
+    const m = getMetrics(networkParam);
     res.status(200).json({
       uniquePayers: m.uniquePayers,
       totalRequestsServed: m.totalRequestsServed,
       totalVolumeUsdc: formatUnits(BigInt(m.totalVolumeAtomic), 6),
       attestationCount: m.attestationCount,
       disputeCount: m.disputeCount,
+    });
+  });
+
+  app.get("/v1/activity", (req, res) => {
+    const { network: networkParam, limit: limitParam } = req.query;
+    if (networkParam !== undefined && !isNetworkName(networkParam)) {
+      res.status(400).json({ error: "network must be 'base' or 'base-sepolia'" });
+      return;
+    }
+    const limit = Math.min(100, Math.max(1, Number(limitParam) || 20));
+
+    const items = getRecentActivity(networkParam, limit);
+    res.status(200).json({
+      items: items.map((item) => ({
+        ...item,
+        explorerUrl: easExplorerAttestationUrl(item.network as NetworkName, item.uid),
+      })),
     });
   });
 

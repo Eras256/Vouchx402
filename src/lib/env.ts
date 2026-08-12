@@ -98,6 +98,17 @@ export function explorerBaseFor(network: NetworkName): string {
 }
 
 /**
+ * EAS's own explorer, not BaseScan — for viewing an attestation's decoded
+ * fields directly rather than raw calldata. The subdomain happens to
+ * equal the `NetworkName` value itself ("base" / "base-sepolia") —
+ * verified both resolve to real attestations before relying on this,
+ * not assumed from the mainnet one alone.
+ */
+export function easExplorerAttestationUrl(network: NetworkName, uid: string): string {
+  return `https://${network}.easscan.org/attestation/view/${uid}`;
+}
+
+/**
  * Etherscan's per-chain V1 endpoints (api.basescan.org/api,
  * api-sepolia.basescan.org/api) are deprecated — confirmed directly (a
  * live call returned `{"status":"0","message":"NOTOK","result":"...

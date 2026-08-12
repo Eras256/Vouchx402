@@ -471,6 +471,39 @@ Next: flip the live Fly deployment to mainnet and redeploy — not done
 automatically just because local verification passed; doing it as its
 own explicit, checked step.
 
+## 2026-08-12 — Phase 7 prep: network-filtered metrics, new /v1/activity endpoint
+
+Investigated before building the frontend's network selector, per the
+Phase 7 spec's explicit instruction not to guess: `/v1/metrics` had no
+network filtering at all (one global aggregate), `requests_served` had
+no `network` column to filter by even if it wanted to, and there was no
+endpoint at all for listing individual recent attestations/disputes
+(needed for the "recent activity" feed). Also found something concrete,
+not hypothetical: the live deployment's current metrics (`totalRequestsServed:1`)
+are entirely leftover Sepolia test data from before the mainnet cutover —
+the live URL has never actually served a real mainnet paid request yet.
+Showing that number unlabeled as "mainnet" on the frontend would be wrong.
+
+Fixed:
+- `requests_served` gets a `network` column — `ALTER TABLE` + backfill
+  from `processed_payments` (which already had `network`) for existing
+  databases, included directly in `CREATE TABLE` for fresh ones. Guarded
+  by checking `PRAGMA table_info` first, runs safely on every startup.
+- `getMetrics(network?)` — optional filter; omitted keeps the original
+  all-networks behavior for backward compatibility. `GET /v1/metrics`
+  now accepts `?network=base|base-sepolia`.
+- New `GET /v1/activity?network=&limit=` — merges `attestations` and
+  `disputes` into one reverse-chronological feed, each item carrying a
+  ready-to-use EAS explorer URL (`easExplorerAttestationUrl()` in
+  src/lib/env.ts — verified both the `base` and `base-sepolia` easscan.org
+  subdomains resolve to real attestations before relying on the pattern,
+  not assumed from the mainnet one alone).
+
+Verified locally before deploying: `?network=base` correctly isolates
+just the one real Phase-3-gate mainnet transaction from the 41
+accumulated Sepolia test transactions in the same local database: exact
+counts, not approximate.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
