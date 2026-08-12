@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "base-mcp": {
+      "source": "base/skills",
+      "sourceType": "github",
+      "skillPath": "skills/base-mcp/SKILL.md",
+      "computedHash": "d2e9be0755fbe2593061d62560330e4d511d6f86f40dfaef7b9446e3f5c88ca3"
+    },
+    "build-on-base": {
+      "source": "base/skills",
+      "sourceType": "github",
+      "skillPath": "skills/build-on-base/SKILL.md",
+      "computedHash": "37faff15db76d9a81dd8082235f2bc76e37b07c04fd0cc1df3ef348caa664374"
+    }
+  }
+}
