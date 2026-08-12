@@ -160,6 +160,16 @@ computations, but running on a degraded signal set. Needs a free key from
 etherscan.io (same account system as BaseScan, confirmed in
 deploy-contracts.md) — I don't have browser access to get one myself.
 
+## 2026-08-12 — Builder Code attribution: verified directly, not inferred
+
+Sent a trivial 0-value self-transfer through `getEasSigner()` (the same
+signer every EAS call uses) and compared its on-chain calldata byte-for-
+byte against the expected `ox/erc8021` suffix, rather than trusting that
+the wiring was correct because the test suite still passed. Confirmed on
+Base Sepolia: calldata `0x62635f7a743976613433320b0080218021802180218021
+802180218021` ends with the exact `80218021...` marker.
+(https://sepolia.basescan.org/tx/0x4a991a1ee3683866b89312152d26d1693e859df4e77a4407ee94ed3163e1af5c)
+
 ## Open questions
 
 - Need `ETHERSCAN_API_KEY` from the user (or explicit sign-off to keep
