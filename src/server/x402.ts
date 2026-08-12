@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { parseUnits } from "viem";
-import { env, usdcAddressFor, type NetworkName } from "../lib/env";
+import { env, usdcAddressFor, payToFor, type NetworkName } from "../lib/env";
 import { insertQuote } from "../lib/db";
 
 /** How long an issued 402 quote stays payable before it expires. */
@@ -36,8 +36,9 @@ export interface X402PaymentRequiredBody {
  * DECISION_LOG.md. The `scheme` value reflects that: "exact-direct".
  */
 export function issueQuote(network: NetworkName, address: string, resourcePath: string): X402PaymentRequiredBody {
-  if (!env.payTo) {
-    throw new Error("X402_PAY_TO_ADDRESS is not configured");
+  const payTo = payToFor(network);
+  if (!payTo) {
+    throw new Error("No payTo address configured for this network");
   }
 
   const resourceId = ("0x" + crypto.randomBytes(32).toString("hex")) as `0x${string}`;
@@ -49,7 +50,7 @@ export function issueQuote(network: NetworkName, address: string, resourcePath: 
     resourceId,
     address: address.toLowerCase(),
     network,
-    payTo: env.payTo.toLowerCase(),
+    payTo: payTo.toLowerCase(),
     amountAtomic,
     asset: asset.toLowerCase(),
     createdAt: now,
@@ -66,7 +67,7 @@ export function issueQuote(network: NetworkName, address: string, resourcePath: 
         resource: resourcePath,
         description: `Vouch402 on-chain risk score for ${address}`,
         mimeType: "application/json",
-        payTo: env.payTo,
+        payTo,
         maxTimeoutSeconds: QUOTE_TTL_SECONDS,
         asset,
         extra: { name: "USDC", resourceId },

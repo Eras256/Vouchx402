@@ -362,6 +362,29 @@ USDC automatically post-cutover — no plugin-file edit needed then.
 `/v1/metrics`'s documented shape was checked the same way and matched
 exactly.
 
+## 2026-08-12 — Split payTo (treasury) from the signer wallet
+
+The user asked, correctly, why they'd be sending real mainnet funds to a
+wallet I generated rather than one they control. Good catch I should have
+raised proactively: `X402_PAY_TO_ADDRESS` and the deployer/signer wallet
+had been the same address since Phase 0, which is fine for testnet
+(nothing real at stake) but not something to carry into mainnet without
+a decision — it means the private key for the wallet that **receives
+payment revenue** lives on the server (Fly secret, decrypted at runtime)
+alongside the autonomous signing key, so a server/secret compromise would
+expose both together.
+
+Split into `X402_PAY_TO_ADDRESS_SEPOLIA` / `_MAINNET` (`payToFor()` in
+src/lib/env.ts), mirroring the existing per-network EAS schema UID
+pattern. Sepolia falls back to the legacy single `X402_PAY_TO_ADDRESS` so
+none of the existing test suite or live Sepolia deployment changes
+behavior — verified directly (`payToFor("base-sepolia")` still returns
+the deployer address). Mainnet has **no fallback**: `payToFor("base")`
+throws rather than silently reusing the signer wallet as treasury —
+verified that too. Waiting on the user for an address they actually
+control before `X402_PAY_TO_ADDRESS_MAINNET` gets set; the signer wallet
+keeps its existing role (just needs gas ETH, never holds revenue).
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

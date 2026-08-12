@@ -22,7 +22,12 @@ export const env = {
 
   port: Number(optional("PORT", "3402")),
   priceUsdc: optional("PRICE_USDC", "0.01"),
+  // Legacy single value — still read as the Sepolia fallback below, and
+  // used directly in a few places as "an address to test against" where
+  // the security distinction below doesn't apply.
   payTo: optional("X402_PAY_TO_ADDRESS", ""),
+  payToSepolia: optional("X402_PAY_TO_ADDRESS_SEPOLIA", ""),
+  payToMainnet: optional("X402_PAY_TO_ADDRESS_MAINNET", ""),
 
   usdcSepolia: optional("USDC_ADDRESS_BASE_SEPOLIA", "0x036CbD53842c5426634e7929541eC2318f3dCF7e"),
   usdcMainnet: optional("USDC_ADDRESS_BASE_MAINNET", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
@@ -54,6 +59,29 @@ export function chainIdFor(network: NetworkName): number {
 
 export function usdcAddressFor(network: NetworkName): `0x${string}` {
   return (network === "base" ? env.usdcMainnet : env.usdcSepolia) as `0x${string}`;
+}
+
+/**
+ * Split from a single flat `payTo` deliberately (see DECISION_LOG.md):
+ * the same wallet was serving as both the autonomous signer (its key
+ * lives on the server, decrypted at runtime — has to be "hot") and the
+ * treasury address that receives real payment revenue. Fine for testnet,
+ * not something to carry into mainnet without a decision. Sepolia keeps
+ * falling back to the legacy single value so nothing about the existing
+ * test suite changes; mainnet has **no fallback** — it throws rather
+ * than silently reusing the signer wallet as treasury.
+ */
+export function payToFor(network: NetworkName): string {
+  if (network === "base") {
+    if (!env.payToMainnet) {
+      throw new Error(
+        "X402_PAY_TO_ADDRESS_MAINNET is not configured. Mainnet intentionally does not fall back to " +
+          "X402_PAY_TO_ADDRESS (the signer wallet) — set it to an address you actually control before switching NETWORK=base."
+      );
+    }
+    return env.payToMainnet;
+  }
+  return env.payToSepolia || env.payTo;
 }
 
 export function explorerBaseFor(network: NetworkName): string {
