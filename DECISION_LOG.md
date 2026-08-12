@@ -991,3 +991,13 @@ afterward: `Root Directory: web`. A verification commit was pushed
 immediately after to confirm the Git-triggered path — the real "every
 commit and push updates it" mechanism the user asked for — actually
 fires correctly end to end, not just that the setting looks right.
+
+**Confirmed, not assumed**: that verification commit triggered a real
+Git-triggered build (`vouch402-r5dudkab4-...`) automatically, with no
+manual `vercel` invocation — checked its status until it reached
+`Ready` (52s build), then re-curled the production alias
+(`vouch402.vercel.app`) for the homepage, Docs page, and the Spanish
+locale, all 200. **Auto-deploy on every push is genuinely live**, not
+just configured. Vercel setup is done; remaining Phase 7 work is
+telling the user to add the `vouch402.xyz` domain (GoDaddy DNS) once
+they're ready.
