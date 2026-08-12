@@ -18,6 +18,18 @@ export function createApp(): Express {
   app.set("trust proxy", true);
   app.use(express.json());
 
+  app.get("/", (_req, res) => {
+    res.status(200).json({
+      name: "Vouch402",
+      description: "x402-metered on-chain risk intelligence for autonomous agents on Base, with a proof-of-fulfillment attestation layer (x402-SAP).",
+      endpoints: {
+        "GET /v1/risk-score/:address": "x402-gated risk score",
+        "GET /v1/metrics": "public aggregate metrics",
+        "POST /v1/disputes": "file a dispute against a fulfillment attestation",
+      },
+    });
+  });
+
   app.get("/v1/risk-score/:address", async (req, res) => {
     const { address } = req.params;
     if (!isAddress(address)) {
