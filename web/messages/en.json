@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "home": "Home",
+    "howItWorks": "How it works",
+    "liveActivity": "Live activity",
+    "docs": "Docs",
+    "github": "GitHub",
+    "menu": "Menu"
+  },
+  "selectors": {
+    "language": "Language",
+    "network": "Network",
+    "theme": "Theme",
+    "testnet": "Testnet",
+    "mainnet": "Mainnet",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "footer": {
+    "tagline": "x402-metered on-chain risk intelligence for autonomous agents on Base.",
+    "github": "GitHub",
+    "docs": "Docs",
+    "license": "License",
+    "api": "Live API",
+    "copyright": "© {year} Vouch402"
+  }
+}

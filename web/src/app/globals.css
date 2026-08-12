@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* Status colors — semantic, deliberately separate from --primary (the
+     single Base-blue brand accent). Never reuse --primary for status. */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Base blue (#0052FF) is the single accent everywhere — Base's own brand
+ * color, and the network this product lives on. Same hex in both themes
+ * (a fixed brand color, not something to re-tune per theme) — it's used
+ * as a solid fill with white text on top, so it doesn't need to adapt to
+ * the surrounding page background the way a text color would.
+ *
+ * Neutrals are NOT pure gray: light mode carries a faint cool/blue tint
+ * (oklch hue ~258, the same hue family as the accent, at very low
+ * chroma), dark mode is a deep navy-black rather than true black — both
+ * picked so the accent feels native to the palette instead of dropped
+ * onto a generic gray scale.
+ */
+:root {
+  --background: oklch(0.995 0.002 258);
+  --foreground: oklch(0.17 0.02 258);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.02 258);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.02 258);
+  --primary: #0052ff;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.006 258);
+  --secondary-foreground: oklch(0.22 0.02 258);
+  --muted: oklch(0.96 0.006 258);
+  --muted-foreground: oklch(0.48 0.014 258);
+  --accent: oklch(0.94 0.01 258);
+  --accent-foreground: oklch(0.22 0.02 258);
+  --destructive: oklch(0.577 0.215 27);
+  --border: oklch(0.9 0.008 258);
+  --input: oklch(0.9 0.008 258);
+  --ring: #0052ff;
+  --success: oklch(0.55 0.15 148);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.72 0.16 70);
+  --warning-foreground: oklch(0.2 0.03 70);
+  --error: oklch(0.577 0.215 27);
+  --error-foreground: oklch(1 0 0);
+  --chart-1: #0052ff;
+  --chart-2: oklch(0.55 0.15 148);
+  --chart-3: oklch(0.72 0.16 70);
+  --chart-4: oklch(0.6 0.02 258);
+  --chart-5: oklch(0.4 0.02 258);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.98 0.004 258);
+  --sidebar-foreground: oklch(0.17 0.02 258);
+  --sidebar-primary: #0052ff;
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0.01 258);
+  --sidebar-accent-foreground: oklch(0.22 0.02 258);
+  --sidebar-border: oklch(0.9 0.008 258);
+  --sidebar-ring: #0052ff;
+}
+
+.dark {
+  --background: oklch(0.16 0.02 258);
+  --foreground: oklch(0.96 0.006 258);
+  --card: oklch(0.2 0.02 258);
+  --card-foreground: oklch(0.96 0.006 258);
+  --popover: oklch(0.2 0.02 258);
+  --popover-foreground: oklch(0.96 0.006 258);
+  --primary: #0052ff;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.25 0.02 258);
+  --secondary-foreground: oklch(0.92 0.006 258);
+  --muted: oklch(0.25 0.02 258);
+  --muted-foreground: oklch(0.66 0.014 258);
+  --accent: oklch(0.27 0.02 258);
+  --accent-foreground: oklch(0.96 0.006 258);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #3d7bff;
+  --success: oklch(0.68 0.17 148);
+  --success-foreground: oklch(0.14 0.03 148);
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.18 0.03 75);
+  --error: oklch(0.68 0.19 25);
+  --error-foreground: oklch(0.14 0.02 25);
+  --chart-1: #3d7bff;
+  --chart-2: oklch(0.68 0.17 148);
+  --chart-3: oklch(0.78 0.15 75);
+  --chart-4: oklch(0.7 0.015 258);
+  --chart-5: oklch(0.5 0.015 258);
+  --sidebar: oklch(0.19 0.02 258);
+  --sidebar-foreground: oklch(0.96 0.006 258);
+  --sidebar-primary: #3d7bff;
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.27 0.02 258);
+  --sidebar-accent-foreground: oklch(0.96 0.006 258);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: #3d7bff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+  /* Anything that's a raw hex value, hash, address, or attestation UID
+     gets Geist Mono — a real functional distinction (scannable/copyable
+     data vs. prose), not decoration. Apply via the `font-mono` utility
+     or the `.data` class at the call site. */
+  .data {
+    @apply font-mono tabular-nums;
+  }
+  .prose-column {
+    max-width: 65ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

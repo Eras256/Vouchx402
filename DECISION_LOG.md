@@ -517,19 +517,16 @@ the Phase 7 frontend to display, not an all-zero dashboard.
 
 ## Open questions
 
-- **Hosting decision needed before Phase 5 can actually close.** Vouch402
-  needs to be deployed somewhere publicly reachable (a domain + a running
-  instance of the Express server) before `plugins/vouch402.md` has a real
-  `requires.allowlist` value and before the PR is submission-ready. This
-  is a real infra/cost decision (platform, domain, who pays for it) —
-  not guessing at a provider or fabricating a placeholder domain.
+- ~~Hosting decision needed before Phase 5 can actually close.~~
+  Resolved — live on Fly.io at `vouch402.fly.dev` since the Phase 5/
+  deployment work below.
 
 - Need `ETHERSCAN_API_KEY` from the user (or explicit sign-off to keep
   running with 2 of 4 scoring signals structurally zeroed) before the
   scoring output is a genuine v0 model rather than a partially-degraded
   one. Not blocking Phase 3's gate (payment + attestation correctness
   don't depend on scoring accuracy), but should be resolved before this
-  is presented as "live."
+  is presented as "live." Still open as of this entry.
 
 ## 2026-08-12 — Pre-push safety check, and untracking vendored skill docs
 
@@ -553,3 +550,78 @@ squashing was still a clean option, but the phase-by-phase commits are
 exactly what this file's entries document — real gates, real bugs found
 live, and the reasoning behind each fix. The vendor docs remaining
 visible in early commits aren't a secret, just noise.
+
+## 2026-08-12 — Phase 7a: web frontend scaffold, and what actually looking at it caught
+
+Next.js App Router scaffold in `/web` (separate npm project inside this
+repo, not a separate repo). Stack exactly as specified: Tailwind + shadcn/ui,
+next-intl (locale-prefixed `/en`, `/es`, always-prefixed per the spec),
+next-themes, Geist + Geist Mono via `next/font`.
+
+One real surprise: this shadcn/ui setup is built on **Base UI**
+(`@base-ui/react`), not classic Radix — meaning the usual `asChild` +
+child-element composition pattern doesn't apply here. Base UI components
+take a `render` prop instead (`<Button render={<Link href="/">...} />`).
+Every component that composes a shadcn primitive with a `Link`/`<a>`
+(navbar links, language switcher, mobile menu) uses that pattern
+throughout, not `asChild` — caught by the build actually failing on the
+first attempt, not assumed going in.
+
+Design tokens: Base blue (`#0052FF`) as the single accent, same hex in
+both themes (a fixed brand color rather than a per-theme variant); light
+mode neutrals carry a faint cool/blue OKLCH hue instead of pure gray,
+dark mode is a deep navy-black rather than true black. Status colors
+(success/warning/error) are separate tokens from `--primary` — never
+reused for status, per the spec.
+
+**No `chromium-cli` available on this (Windows) machine** — it's the
+Linux-container tool the `run` skill defaults to. Fell back to driving
+Playwright directly (already installed with Chromium binaries on this
+machine; added as a scratchpad-only dependency, not part of the shipped
+app) per the skill's own documented fallback. Worth it: actually
+screenshotting the rendered page at 375/768/1440px and toggling the
+theme caught two real bugs that a build-and-typecheck pass alone did not:
+
+1. A red "N · Issues" dev-mode indicator was visible on every screenshot.
+   Investigated rather than ignored: Base UI's `Button` defaults to
+   expecting to render a real `<button>` element (`nativeButton: true`)
+   and warns when a `render` prop swaps in an `<a>` instead — which is
+   exactly what every nav-link/language-switcher Button does. Fixed by
+   setting `nativeButton={false}` explicitly on those specific instances
+   (navbar links, the GitHub link, the mobile menu's language buttons) —
+   makes the "this is a link styled as a button, not a real button" choice
+   explicit instead of an unacknowledged warning. Re-verified after the
+   fix: zero console errors, indicator gone.
+2. `network-provider.tsx`'s and `theme-selector.tsx`'s original
+   `useState` + `useEffect(() => setState(...))` pattern for reading
+   localStorage on mount tripped this project's `react-hooks/set-state-in-effect`
+   ESLint rule (a real error, not a warning, in this config) — caught by
+   `npm run lint`, separately from the screenshot pass. Fixed properly
+   rather than suppressed: `network-provider.tsx` now uses
+   `useSyncExternalStore` (React's actual primitive for subscribing to
+   state that lives outside React, e.g. localStorage — not a workaround,
+   the documented correct tool for this exact case), and
+   `theme-selector.tsx` just reads `next-themes`' own `theme` value
+   directly (typed `string | undefined` specifically because it's
+   `undefined` pre-mount) instead of tracking a redundant second "have we
+   mounted" boolean.
+
+Confirmed via screenshot, not assumed: navbar collapses correctly at
+375px (hamburger + sheet, all three selectors + nav links stacked inside
+it), shows the full inline layout with individual selectors at 768px and
+1440px without wrapping/overlap, language switching swaps every string
+including the footer tagline, and theme switching genuinely toggles the
+`dark` class on `<html>` and repaints to the intended navy-black (not a
+CSS variable that silently wasn't wired up).
+
+Also fixed two Next.js 16 deprecation warnings surfaced by the build
+itself while at it: `middleware.ts` → `proxy.ts` (renamed convention,
+next-intl's middleware export works unchanged under the new filename),
+and set `turbopack.root` explicitly (this repo has two npm projects —
+the API at the root, this app in `/web` — each with its own lockfile,
+which Next.js otherwise has to guess about).
+
+**Phase 7a gate met**: `npm run build` succeeds, `npm run lint` is clean,
+responsive at all three specified breakpoints (verified by screenshot),
+language switching and theme switching both confirmed working end-to-end,
+not just structurally plausible.

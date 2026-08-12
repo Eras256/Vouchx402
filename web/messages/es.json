@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "howItWorks": "Cómo funciona",
+    "liveActivity": "Actividad en vivo",
+    "docs": "Documentación",
+    "github": "GitHub",
+    "menu": "Menú"
+  },
+  "selectors": {
+    "language": "Idioma",
+    "network": "Red",
+    "theme": "Tema",
+    "testnet": "Testnet",
+    "mainnet": "Mainnet",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "footer": {
+    "tagline": "Inteligencia de riesgo on-chain para agentes autónomos en Base, medida con x402.",
+    "github": "GitHub",
+    "docs": "Documentación",
+    "license": "Licencia",
+    "api": "API en vivo",
+    "copyright": "© {year} Vouch402"
+  }
+}
