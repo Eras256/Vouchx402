@@ -827,3 +827,73 @@ after the CORS change); verified against a clean production build with
 Playwright — zero console errors, real API data rendered (not stuck on
 a loading/error state), network-selector independence confirmed live,
 both locales, all three breakpoints, light and dark.
+
+## 2026-08-12 — Phase 7d: the interactive demo, and a real architecture
+mismatch investigated before writing any code
+
+The spec named `@base-org/account`'s `pay()`/`getPaymentStatus()`/
+`BasePayButton` specifically. Investigated all three against the actual
+installed source before wiring anything up, per the spec's own
+instruction not to guess — and found one real, worth-recording mismatch
+plus one real gap:
+
+**`BasePayButton` isn't in `@base-org/account` at all.** It's not
+exported from the package that's already a dependency — checked its
+`index.d.ts` directly, not assumed missing from memory. Found it via
+`npm view`/`npm search`, not guessed at a plausible-sounding package
+name: it lives in a separate, official package, `@base-org/account-ui`
+(subpath export `./react`), installed as its own dependency.
+
+**The real concern going in**: Vouch402's `verifyPayment()`
+(`src/server/payment.ts`) is built entirely around independently
+re-deriving every fact from a real L1 transaction receipt
+(`client.getTransactionReceipt`) — "never trusts the client's claim
+alone" is the actual code comment. `@base-org/account`'s `pay()` executes
+through a smart wallet via ERC-4337, and `getPaymentStatus`'s own JSDoc
+calls its `id` parameter a "userOp hash." A userOp hash is not a real
+transaction hash — `getTransactionReceipt` would not resolve it, which
+would have made the entire demo silently unable to complete its own
+last step no matter how correct everything else was.
+
+Resolved by reading the actual implementation, not the doc comment
+alone: `pay()` calls `wallet_sendCalls` with a single, genuine
+`ERC20.transfer(to, amount)` call encoded against the real USDC contract
+address (`translatePayment.js`), and its returned `id` is sourced from
+`executionResult.transactionHash` — named and commented as a real
+transaction hash throughout the call chain (`sdkManager.js`,
+`sendUserOpAndWait.js`), not the userOp identifier. A concrete
+cross-check confirms this is real, not just internally self-consistent:
+the live 402 quote's `asset` address and `@base-org/account`'s own
+`TOKENS.USDC.addresses.base` constant are byte-for-byte identical — the
+two systems agree on-chain, not just in their own documentation.
+
+Built the flow to match exactly what both sides actually expect: fetch
+the real 402 quote -> `pay()` with the quoted amount/payTo -> poll
+`getPaymentStatus()` for `sender` once completed -> retry the resource
+request with `{ resourceId, txHash: id, payer: sender }` as the
+`X-PAYMENT` proof, with a short retry loop on the resource-fetch step
+specifically for the same public-RPC-lag class of issue already
+documented elsewhere in this log.
+
+**The address being scored is a UI input, not the payer's own address.**
+Vouch402 prices a risk score *for an address*, independent of who pays
+for it (`GET /v1/risk-score/:address`) — the payer's identity only
+becomes known after payment, via `getPaymentStatus()`'s `sender` field.
+So the demo asks the visitor which address to check (defaulted to the
+same real, checkable address already used in the Hero proof card) rather
+than assuming "check my own wallet," which would have required a
+separate connect-wallet step before a quote could even be requested.
+
+**Verified, honestly scoped**: real 402 quote fetched and displayed with
+the correct interpolated amount/payTo; invalid-address validation;
+clicking the real `BasePayButton` genuinely opens a real Coinbase
+popup (`keys.coinbase.com/onboarding?sdkName=%40base-org%2Faccount...`)
+and the UI correctly advances to "Approve 0.01 USDC to 0xb440b82F…
+in your wallet…" with real, correct values — confirmed via Playwright,
+not assumed; zero unexpected console errors; both locales, responsive,
+light and dark. **What is not verified, and cannot be by browser
+automation alone**: a real wallet actually approving and confirming the
+transaction, and the resulting final fulfillment/attestation render.
+That needs one real click-through by a human with a funded testnet
+wallet — the architecture and every step up to that handoff is now
+verified against real, live systems on both ends, not guessed.

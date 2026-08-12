@@ -3,6 +3,7 @@
     "home": "Inicio",
     "howItWorks": "Cómo funciona",
     "liveActivity": "Actividad en vivo",
+    "tryIt": "Pruébalo",
     "docs": "Documentación",
     "github": "GitHub",
     "menu": "Menú"
@@ -95,6 +96,34 @@
       "totalVolumeUsdc": "Volumen (USDC)",
       "attestationCount": "Attestations",
       "disputeCount": "Disputas"
+    }
+  },
+  "tryIt": {
+    "title": "Pruébalo",
+    "subtitle": "Un pago x402 real, aquí mismo — sin teatro de dinero ficticio en testnet, una transferencia real de USDC on-chain verificada por la API en vivo.",
+    "addressLabel": "Dirección de Base a evaluar",
+    "addressPlaceholder": "0x…",
+    "addressInvalid": "Ingresa una dirección de Base válida con prefijo 0x.",
+    "networkNote": "Se ejecuta en {network} — cambia de red en la barra de navegación de arriba. Testnet es la opción segura por defecto: no involucra fondos reales.",
+    "phase": {
+      "quoting": "Solicitando una cotización…",
+      "awaitingPayment": "Aprueba {amount} USDC a {payTo} en tu wallet…",
+      "confirming": "Confirmando el pago on-chain…",
+      "fulfilling": "Pago confirmado — obteniendo el score de riesgo…",
+      "error": "Algo salió mal",
+      "tryAgain": "Intentar de nuevo"
+    },
+    "result": {
+      "title": "X402ServiceFulfillment",
+      "score": "score",
+      "walletAgeDays": "antigüedad de la wallet (días)",
+      "txCount": "cantidad de tx",
+      "uniqueContractInteractions": "contratos únicos",
+      "flagged": "marcada",
+      "yes": "sí",
+      "no": "no",
+      "viewTx": "Ver transacción",
+      "viewAttestation": "Ver attestation"
     }
   },
   "recentActivity": {

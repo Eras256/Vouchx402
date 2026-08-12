@@ -1,6 +1,7 @@
 import { Hero } from "@/components/sections/hero";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { LiveActivity } from "@/components/sections/live-activity";
+import { TryIt } from "@/components/sections/try-it";
 import { ApiReference } from "@/components/sections/api-reference";
 
 export default function HomePage() {
@@ -9,6 +10,7 @@ export default function HomePage() {
       <Hero />
       <HowItWorks />
       <LiveActivity />
+      <TryIt />
       <ApiReference />
     </>
   );
