@@ -5,7 +5,7 @@ primary_region = "dfw"
 
 [env]
   PORT = "3402"
-  NETWORK = "base-sepolia"
+  NETWORK = "base"
   DB_PATH = "/data/vouch402.sqlite"
   PRICE_USDC = "0.01"
 

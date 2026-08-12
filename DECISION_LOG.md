@@ -426,6 +426,51 @@ immediately if it had gone to the wrong chain). The signer wallet still
 has 0 ETH, so it can't sign anything on mainnet yet — schema registration
 and the Phase 3 gate transaction are blocked until it arrives.
 
+## 2026-08-12 — Signer wallet funded on mainnet, verified on-chain
+
+Confirmed both transfers directly (receipts + balances, not just the
+provided links): signer wallet `0x53a79B...263b0` now holds 0.0025 ETH +
+1 USDC; treasury `0xb440b8...` kept ~0.0006 ETH + 2 USDC.
+- ETH: https://basescan.org/tx/0xc3301170e335fe1dba9335c06efab6a06ffb8b19e3a9be6cf66639c3841a3ca9
+- USDC: https://basescan.org/tx/0x7c6261b5aa7ba66177ebbb1d2e06720181ebdb8fae786de963c7bfa927870e55
+
+Enough to proceed with mainnet schema registration and the Phase 3 gate
+transaction. Plan: register schemas + prove the full flow via a local
+script against mainnet RPC first (same pattern used for Sepolia before
+it ever touched the live Fly deployment), then flip the live deployment's
+`NETWORK` to `base` and redeploy only once that's confirmed working —
+not flipping the public endpoint over blind.
+
+## Phase 3 gate — met (2026-08-12)
+
+Full flow run against real Base mainnet, via a local server instance
+first (same pattern as the Sepolia rollout — prove it locally before the
+public endpoint touches mainnet):
+
+- Schemas registered on mainnet, verified via `getSchema()` directly
+  (not just trusting the registration script's own report): both resolve
+  correctly, same UIDs as Sepolia (expected — schema UIDs are
+  deterministic from schema+resolver+revocable, not chain-dependent).
+- Real settled payment: https://basescan.org/tx/0x6e44081aa3f05c73f6c9c32dc456f0231c3a690a33159765917ff096d138659c
+  (signer wallet paying into the treasury address — real two-party
+  transfer now that payTo is split from the signer, not a self-transfer).
+- `200` response, real score, `attestationUid` present.
+- Fulfillment attestation independently resolved via EAS on mainnet
+  (attester/recipient match).
+- Dispute filed and resolved against it (full x402-SAP path, not just
+  the minimum "one payment" the gate technically requires).
+- Builder Code attribution confirmed on the actual mainnet attestation
+  transaction (`0xe2b5002c923bd9b49afce698f9d0f7ebef66d24f8c1eafd22c0a64e7c5f7ebb7`)
+  by pulling its real calldata and comparing the tail against the
+  expected ERC-8021 suffix byte-for-byte — matched. Deliberately not
+  checked on the payment transaction itself: attribution is Vouch402's
+  own outgoing-transaction property, not something that applies to
+  whichever wallet happens to be paying.
+
+Next: flip the live Fly deployment to mainnet and redeploy — not done
+automatically just because local verification passed; doing it as its
+own explicit, checked step.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

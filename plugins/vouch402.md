@@ -52,24 +52,23 @@ x402-gated. First call, no `X-PAYMENT` header:
     "x402Version": 1,
     "accepts": [{
       "scheme": "exact-direct",
-      "network": "base-sepolia",
+      "network": "base",
       "maxAmountRequired": "10000",
       "resource": "https://vouch402.fly.dev/v1/risk-score/<address>",
       "description": "Vouch402 on-chain risk score for <address>",
       "mimeType": "application/json",
       "payTo": "0x...",
       "maxTimeoutSeconds": 300,
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "extra": { "name": "USDC", "resourceId": "0x<bytes32>" }
     }]
   }
   ```
-  Pulled fresh from the live instance, not written from memory —
-  `network`/`asset` currently read Base Sepolia (see the Notes section on
-  current vs. intended network) and will read `base`/mainnet USDC
-  (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) once the mainnet cutover
-  lands; both fields are already derived from live server config, not
-  hardcoded, so no plugin-file change will be needed when that happens.
+  Pulled fresh from the live instance, not written from memory — as of
+  the mainnet cutover this is Base mainnet + native mainnet USDC
+  (`network`/`asset` are derived from live server config, not hardcoded,
+  so this example stays accurate without further edits as long as it's
+  re-checked against the live instance).
   `scheme: "exact-direct"` — the caller settles with a plain ERC-20
   `transfer`, not an EIP-3009 signature relayed through a facilitator.
   `resourceId` binds a specific payment to this specific quote; it
@@ -129,11 +128,10 @@ For `POST /v1/disputes`, `sign` produces the personal-sign signature described i
 
 ## Notes
 
-- The live instance (`vouch402.fly.dev`) currently runs on Base Sepolia
-  while the mainnet cutover is in progress — `chains: [base]` above
-  declares the intended production network, not necessarily what's live
-  at any given moment. Check a `402` response's `accepts[0].network`
-  field for the network actually in effect before relying on it.
+- The live instance (`vouch402.fly.dev`) runs on Base mainnet as of the
+  Phase 3 cutover — matches `chains: [base]` above. Still worth checking
+  a `402` response's `accepts[0].network` field directly rather than
+  assuming, since that's what actually governs a given request.
 - `score` is an explicitly-scoped v0 heuristic (wallet age, tx count, contract-interaction diversity, flag-list membership) — not a complete risk model. The bundled flag list ships empty in this version (no unverified data bundled without a cited source); `flagged` will read `false` for every address until it's populated from a real source. Don't present `score` to end users as authoritative without this caveat.
 - USDC on Base mainnet: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
 - Fulfillment and dispute attestations are on EAS, native to Base (and Base Sepolia) as an OP Stack predeploy at `0x4200000000000000000000000000000000000021` (SchemaRegistry `0x4200000000000000000000000000000000000020`) — resolvable via any standard EAS explorer/SDK, independent of this plugin.
