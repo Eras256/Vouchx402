@@ -347,6 +347,21 @@ so the scoring formula has real unit test coverage (test/score.test.ts)
 that doesn't inherit the public Base Sepolia RPC's flakiness the rest of
 this suite is stuck with.
 
+## 2026-08-12 — Re-verified plugins/vouch402.md against the live instance
+
+Per the stricter Phase 5 bar (verify every claim against actual live
+behavior, not memory): pulled fresh responses from `vouch402.fly.dev`
+rather than trusting what was written when the file was drafted before
+deployment existed. Found one real drift — the example `402` response
+body showed `"network": "base"` and mainnet USDC's address, but the live
+instance currently returns `"network": "base-sepolia"` and Sepolia USDC
+(correct: mainnet cutover hasn't happened yet). Fixed the example to show
+what the service actually returns right now, with a note that both
+fields are already derived from live config and will read `base`/mainnet
+USDC automatically post-cutover — no plugin-file edit needed then.
+`/v1/metrics`'s documented shape was checked the same way and matched
+exactly.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

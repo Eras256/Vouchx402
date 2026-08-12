@@ -52,18 +52,24 @@ x402-gated. First call, no `X-PAYMENT` header:
     "x402Version": 1,
     "accepts": [{
       "scheme": "exact-direct",
-      "network": "base",
-      "maxAmountRequired": "<atomic USDC amount, string>",
-      "resource": "<this request's full URL>",
+      "network": "base-sepolia",
+      "maxAmountRequired": "10000",
+      "resource": "https://vouch402.fly.dev/v1/risk-score/<address>",
       "description": "Vouch402 on-chain risk score for <address>",
       "mimeType": "application/json",
       "payTo": "0x...",
       "maxTimeoutSeconds": 300,
-      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
       "extra": { "name": "USDC", "resourceId": "0x<bytes32>" }
     }]
   }
   ```
+  Pulled fresh from the live instance, not written from memory —
+  `network`/`asset` currently read Base Sepolia (see the Notes section on
+  current vs. intended network) and will read `base`/mainnet USDC
+  (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) once the mainnet cutover
+  lands; both fields are already derived from live server config, not
+  hardcoded, so no plugin-file change will be needed when that happens.
   `scheme: "exact-direct"` — the caller settles with a plain ERC-20
   `transfer`, not an EIP-3009 signature relayed through a facilitator.
   `resourceId` binds a specific payment to this specific quote; it
