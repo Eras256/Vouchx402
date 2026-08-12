@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GithubIcon } from "@/components/layout/github-icon";
 import { easExplorerUrl } from "@/lib/vouch402";
+import { truncateHex } from "@/lib/format";
 
 const GITHUB_URL = "https://github.com/Eras256/Vouchx402";
 
@@ -20,10 +21,6 @@ const PROOF = {
   attestationUid: "0xc15b1139d2b9af18ba81004532229c3d4ccbbdd176410e6b59f7eec20a9d9909",
   network: "base" as const,
 };
-
-function truncateHex(hex: string, lead = 10, tail = 8): string {
-  return hex.length > lead + tail + 3 ? `${hex.slice(0, lead)}…${hex.slice(-tail)}` : hex;
-}
 
 export function Hero() {
   const t = useTranslations("hero");

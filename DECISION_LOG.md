@@ -774,3 +774,56 @@ product has, not just a cosmetic inconsistency. The Live stats section
 makes this explicit rather than silently ignoring the selector: it's
 labeled "Base mainnet" as a static fact, not a value that tracks the
 selector.
+
+## 2026-08-12 — Phase 7c: Live stats + Recent activity, wired to the real API
+
+Built the Live stats and Recent activity feed sections
+(`live-stats.tsx`/`recent-activity.tsx`, composed under one
+`#live-activity` anchor in `live-activity.tsx`), both pinned to mainnet
+per the scope decision above. A few things worth recording:
+
+**Client-side fetch to a different origin needed CORS, and the API
+didn't have it** — caught by checking, not assumed: `curl -I` against
+`vouch402.fly.dev` with an `Origin` header showed no
+`Access-Control-Allow-Origin` at all. Fixed on the backend (wildcard
+origin, reasoning in the entry above) and redeployed before writing any
+frontend fetch code, not after discovering it broken in the browser.
+
+**Two real bugs caught by testing against the live API, not just a
+build/typecheck pass:**
+1. `react-hooks/set-state-in-effect` fired on `use-live-data.ts`'s
+   original pattern of synchronously resetting `loading`/`error` at the
+   top of the effect body before the async fetch — the same rule class
+   from 7a, same fix direction: only set state from the async
+   continuation. Documented the resulting tradeoff in the hook's own
+   comment (stale data would stay visible during a refetch if `network`
+   ever actually changed post-mount, which it doesn't at either of
+   today's call sites).
+2. The 5-stat grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-5`) left an
+   empty, unlabeled gray cell in the last row at both the 375px and
+   768px breakpoints — 5 doesn't divide evenly into 2 or 3 columns.
+   Invisible in a build/lint pass, caught by an actual screenshot at
+   both breakpoints. Fixed by spanning the last stat across the
+   remaining columns (`col-span-2 lg:col-span-1`) rather than picking a
+   different, more-divisible column count, since 5 real metrics is the
+   right number to show.
+
+**Verified against the real live deployment, not mocked data**: the
+stat values and the one real activity row rendered on screen
+(`uniquePayers: 1`, `totalVolumeUsdc: "0.01"`, the one real mainnet
+fulfillment with a working EAS explorer link and a correctly-localized
+relative timestamp, "1 hour ago" / "hace 1 hora" via
+`Intl.RelativeTimeFormat` — no hand-maintained "X ago" strings to keep
+in sync across languages) were confirmed to match a direct `curl`
+against `vouch402.fly.dev` taken moments before. Also drove the actual
+network-selector UI in the browser (not just read the code) and
+confirmed the Live stats numbers genuinely don't change when it's
+flipped — the "pinned to mainnet" decision is real, working behavior,
+not just an intent.
+
+**Phase 7c gate met**: `npm run build`/`lint`/`tsc --noEmit` clean on
+both the frontend and the backend (12/12 backend tests still passing
+after the CORS change); verified against a clean production build with
+Playwright — zero console errors, real API data rendered (not stuck on
+a loading/error state), network-selector independence confirmed live,
+both locales, all three breakpoints, light and dark.

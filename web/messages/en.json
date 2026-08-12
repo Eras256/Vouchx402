@@ -82,5 +82,38 @@
     "title": "Documentation",
     "tableOfContents": "On this page",
     "sourceNote": "This page renders docs/TECHNICAL_SPEC.md directly from the repository — technical reference content, kept in English regardless of site language, matching standard developer-documentation convention."
+  },
+  "liveStats": {
+    "title": "Live activity",
+    "subtitle": "Real counters from the live deployment — not estimated, not a mockup.",
+    "mainnetBadge": "Base mainnet",
+    "mainnetNote": "Always shown for mainnet, regardless of the network selector above — testnet activity is development noise, not a meaningful usage signal.",
+    "loadError": "Couldn't load live stats from the API just now.",
+    "stats": {
+      "uniquePayers": "Unique payers",
+      "totalRequestsServed": "Requests served",
+      "totalVolumeUsdc": "Volume (USDC)",
+      "attestationCount": "Attestations",
+      "disputeCount": "Disputes"
+    }
+  },
+  "recentActivity": {
+    "title": "Recent activity",
+    "subtitle": "The latest fulfillments and disputes, straight from EAS.",
+    "empty": "No activity yet on this network.",
+    "loadError": "Couldn't load recent activity from the API just now.",
+    "viewOnExplorer": "View on EAS explorer",
+    "disputedAgainst": "Dispute against {refUid}",
+    "fulfillmentStatus": {
+      "0": "Fulfilled",
+      "1": "Timeout",
+      "2": "Error"
+    },
+    "disputeReason": {
+      "0": "Non-delivery",
+      "1": "Malformed response",
+      "2": "Stale data",
+      "3": "Other"
+    }
   }
 }

@@ -82,5 +82,38 @@
     "title": "Documentación",
     "tableOfContents": "En esta página",
     "sourceNote": "Esta página renderiza docs/TECHNICAL_SPEC.md directamente desde el repositorio — contenido de referencia técnica, que se mantiene en inglés sin importar el idioma del sitio, siguiendo la convención estándar de documentación para desarrolladores."
+  },
+  "liveStats": {
+    "title": "Actividad en vivo",
+    "subtitle": "Contadores reales del despliegue en vivo — no estimados, no una maqueta.",
+    "mainnetBadge": "Base mainnet",
+    "mainnetNote": "Siempre se muestra para mainnet, sin importar el selector de red de arriba — la actividad en testnet es ruido de desarrollo, no una señal de uso real.",
+    "loadError": "No se pudieron cargar las estadísticas en vivo desde la API en este momento.",
+    "stats": {
+      "uniquePayers": "Pagadores únicos",
+      "totalRequestsServed": "Solicitudes atendidas",
+      "totalVolumeUsdc": "Volumen (USDC)",
+      "attestationCount": "Attestations",
+      "disputeCount": "Disputas"
+    }
+  },
+  "recentActivity": {
+    "title": "Actividad reciente",
+    "subtitle": "Los últimos cumplimientos y disputas, directamente desde EAS.",
+    "empty": "Todavía no hay actividad en esta red.",
+    "loadError": "No se pudo cargar la actividad reciente desde la API en este momento.",
+    "viewOnExplorer": "Ver en el explorador de EAS",
+    "disputedAgainst": "Disputa contra {refUid}",
+    "fulfillmentStatus": {
+      "0": "Cumplido",
+      "1": "Tiempo agotado",
+      "2": "Error"
+    },
+    "disputeReason": {
+      "0": "No entregado",
+      "1": "Respuesta malformada",
+      "2": "Datos desactualizados",
+      "3": "Otro"
+    }
   }
 }
