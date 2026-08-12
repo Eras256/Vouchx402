@@ -21,6 +21,25 @@ export function createApp(): Express {
   // when the actual request came in over HTTPS. Confirmed live on the
   // Fly deployment before this was added — not a hypothetical.
   app.set("trust proxy", true);
+  // x402 is an open, agent-to-agent protocol over plain HTTP — every route
+  // here is meant to be called by arbitrary clients (including a browser),
+  // and none of them rely on cookies/session auth (payment proof and
+  // dispute signatures are the actual authority, not ambient credentials),
+  // so a wildcard origin carries no CSRF-style risk. Added specifically
+  // because the Phase 7 frontend calls this API directly from the browser
+  // (no proxy layer of its own) — verified live before this fix that the
+  // API sent no Access-Control-Allow-Origin header at all, which would
+  // have silently blocked every one of those calls.
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-PAYMENT");
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
   app.use(express.json());
 
   app.get("/", (_req, res) => {

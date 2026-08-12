@@ -727,3 +727,50 @@ breakpoints (375/768/1440); every TOC entry resolves to a real heading
 and scrolls; every internal link 200s (`#live-activity` confirmed inert
 by design, not broken); code blocks are actually syntax-highlighted, not
 just structurally present. Screenshots reviewed in both light and dark.
+
+## 2026-08-12 — Backend: CORS was silently missing, found before it could
+block checkpoint 7c
+
+Before wiring the Live stats / Recent activity sections to the real API,
+checked whether the live deployment actually sends CORS headers at all —
+it didn't (`curl -I` against `vouch402.fly.dev` with an `Origin` header
+showed no `Access-Control-Allow-Origin` in the response, confirmed
+directly, not assumed from reading the Express setup). The frontend
+spec requires plain client-side `fetch()` straight to
+`https://vouch402.fly.dev` with no proxy layer of its own, so this would
+have silently blocked every browser-side call once deployed — not just
+7c, but 7d's interactive demo too.
+
+Fixed with a small wildcard-origin middleware (`Access-Control-Allow-Origin: *`,
+covering the OPTIONS preflight too) rather than an origin allowlist:
+every route here is meant to be called by arbitrary agents/clients over
+the open x402 protocol, none of them rely on cookies or session auth
+(payment proof and dispute signatures are the actual authority), and an
+allowlist would also be brittle against Vercel's per-branch preview
+subdomains. Deployed to Fly, re-verified live: preflight returns the
+right headers, and both `/v1/metrics` and `/v1/activity` still return
+correct data afterward. Backend test suite (12 tests) still green.
+
+## Network selector scope for 7c, clarified
+
+`network-provider.tsx` (built during 7a) already states the conclusion
+in its own doc comment: the network selector controls checkpoint 7d's
+interactive demo, not the Live stats / Recent activity sections — those
+stay pinned to mainnet regardless of the selector. Restating the
+reasoning here explicitly, since the comment references "see
+DECISION_LOG.md" without this actually having been spelled out yet:
+
+The Phase 7 spec's instruction was to investigate the backend and only
+build the fuller (selector-controls-everything) behavior if genuinely
+supported, not guessed. The backend genuinely does support it now (the
+network-filtering work above). But "technically supported" isn't the
+only input here — the accumulated Sepolia test data is exactly that,
+test noise (41 throwaway transactions from earlier development, versus
+1 real mainnet request). Letting the selector drive these two sections
+would let a visitor flip to Testnet and see that noise presented with
+the same visual weight as the real mainnet activity the section exists
+to demonstrate — actively misleading about how much genuine usage this
+product has, not just a cosmetic inconsistency. The Live stats section
+makes this explicit rather than silently ignoring the selector: it's
+labeled "Base mainnet" as a static fact, not a value that tracks the
+selector.
