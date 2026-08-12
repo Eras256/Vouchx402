@@ -954,3 +954,40 @@ Directory to `web` (it's currently `.`, an artifact of how it was
 linked, and needs fixing before a Git-triggered build would find the
 Next.js app at all), then `vercel git connect` again, which should also
 fire the first Git-triggered deployment automatically.
+
+## 2026-08-12 — Live on Vercel: GitHub connected, first deploy verified
+
+The user completed the one unavoidably-manual step (GitHub login
+connection on their Vercel account) and re-ran `vercel git connect` —
+succeeded. Deployed immediately via CLI from `web/` to get a working
+URL right away rather than waiting on a git-triggered build:
+**https://vouch402.vercel.app**, confirmed live — homepage and Docs
+page both 200, Docs page rendering the real spec content (the
+`sync-docs.mjs` guard fired exactly as designed: logged "not reachable
+from here (expected on Vercel) — skipping" and the build used the
+already-committed copy), Live stats/Recent activity showing real data
+fetched cross-origin from `vouch402.fly.dev` (confirms the CORS fix
+holds in the actual deployed environment, not just localhost), zero
+console errors — checked with Playwright against the real production
+URL, not assumed from the successful build log alone.
+
+**Correction to the Root Directory finding above**: the actual Vercel
+dashboard *does* show an "Include files outside the root directory in
+the Build Step" toggle (screenshotted by the user, already Enabled by
+default) — it just isn't mentioned on the specific docs page checked
+earlier (`/docs/builds/configure-a-build`). So the original 7b
+assumption wasn't entirely wrong; the page just didn't cover this
+specific toggle. Decided to keep the `sync-docs.mjs`/committed-copy fix
+anyway rather than revert to the parent-directory read now that the
+toggle is confirmed to exist: it's already built, tested, and live: it
+also doesn't depend on a project-level setting that isn't clearly
+documented and could reset on a future project recreation. Reverting
+now would be pure churn for no functional gain.
+
+Root Directory was `.` (an artifact of linking the project from
+`web/`) — the user set it to `web` via the dashboard (the one field the
+CLI has no subcommand for). Confirmed via `vercel project inspect`
+afterward: `Root Directory: web`. A verification commit was pushed
+immediately after to confirm the Git-triggered path — the real "every
+commit and push updates it" mechanism the user asked for — actually
+fires correctly end to end, not just that the setting looks right.
