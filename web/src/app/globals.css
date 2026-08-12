@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -176,6 +177,110 @@
   .prose-column {
     max-width: 65ch;
   }
+  /* Every in-page anchor (nav links, the Docs TOC, heading permalinks)
+     targets an element with an id — offset the scroll landing so the
+     sticky navbar never covers it. */
+  [id] {
+    scroll-margin-top: 5rem;
+  }
+}
+
+/*
+ * @tailwindcss/typography ships its own gray-based color palette by
+ * default (the `prose-neutral`/`prose-invert` modifiers). Pointing its
+ * CSS custom properties at this project's own tokens instead keeps the
+ * Docs page's prose column on the same cool-tinted, non-gray palette as
+ * the rest of the site. `--foreground`/`--muted-foreground`/etc. already
+ * flip value under `.dark` (see the :root / .dark blocks above), so a
+ * single set of --tw-prose-* values here covers both themes — no
+ * separate --tw-prose-invert-* block or `dark:prose-invert` needed.
+ */
+.prose {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--primary);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--muted-foreground);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--foreground);
+  --tw-prose-pre-bg: var(--card);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
+/*
+ * rehype-highlight token colors, mapped onto this project's own design
+ * tokens rather than an imported highlight.js theme stylesheet — so code
+ * blocks stay consistent with both themes without a second palette to
+ * maintain. @tailwindcss/typography handles prose layout (spacing,
+ * headings, lists); it does not color `.hljs-*` token classes, so those
+ * are defined here explicitly.
+ */
+.hljs-comment,
+.hljs-quote {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: var(--primary);
+}
+.hljs-string,
+.hljs-attr,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: var(--success);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--warning);
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_,
+.hljs-name {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.hljs-attribute,
+.hljs-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--foreground);
+}
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--primary);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+.hljs-deletion {
+  color: var(--error);
+}
+.hljs-addition {
+  color: var(--success);
+}
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-doctag {
+  color: var(--muted-foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -625,3 +625,105 @@ which Next.js otherwise has to guess about).
 responsive at all three specified breakpoints (verified by screenshot),
 language switching and theme switching both confirmed working end-to-end,
 not just structurally plausible.
+
+## 2026-08-12 — Phase 7b: content sections, Docs page, and a false-positive
+hunt worth recording
+
+Built Hero, How it works, API reference, and the Docs page
+(`docs/TECHNICAL_SPEC.md` rendered live via `react-markdown` +
+`remark-gfm` + `rehype-slug` + `rehype-highlight`), plus the shared
+`CodeBlock`/`markdownComponents` infrastructure both reuse. A few
+decisions worth recording:
+
+**Syntax highlighting is themed via our own tokens, not an imported
+highlight.js stylesheet.** `rehype-highlight` only adds `.hljs-*` token
+classes to the markup — coloring them was left to us. Mapped each token
+class onto the existing design tokens (`--primary` for
+keywords/built-ins, `--success` for strings, `--warning` for
+numbers/literals, `--muted-foreground` for comments, etc.) in
+`globals.css`, so code blocks stay on-brand and theme-consistent instead
+of carrying a second, disconnected color palette. Verified `bash`/`json`
+are in `rehype-highlight`'s default "common" language set by reading its
+actual `.d.ts` (an earlier draft imported `highlight.js/lib/languages/*`
+manually and passed a nonexistent `ignoreMissing` option — caught before
+it shipped, not assumed to be needed).
+
+**`@tailwindcss/typography`'s own gray palette was overridden, not
+adopted.** Its `prose-neutral`/`prose-invert` modifiers ship a separate
+gray-based palette; pointing its `--tw-prose-*` CSS custom properties at
+this project's own tokens instead (`--foreground`, `--muted-foreground`,
+etc.) keeps the Docs page's prose column on the same cool-tinted,
+non-gray palette as the rest of the site — and since those tokens
+already flip under `.dark`, one set of `--tw-prose-*` values covers both
+themes with no `-invert` block needed. Inline-code backtick pseudo-
+elements (`prose-code:before:content-none`) were suppressed too — the
+default rendering read as a generic-markdown-template tell the design
+brief explicitly wants avoided.
+
+**The Docs TOC is generated independently of the render, then verified
+against it.** `src/lib/toc.ts` extracts headings from the raw markdown
+and slugs them with `github-slugger` directly — the same library
+`rehype-slug` uses internally — rather than trying to read IDs back out
+of the rendered React tree. This only stays correct if both slug in the
+same document order (slug de-duplication is stateful), which is
+documented in the function's own comment. Not just asserted: a Playwright
+check (`screenshot-7b.js`) confirms every TOC `href` resolves to a real
+heading `id` in the rendered page, and that clicking a TOC entry actually
+scrolls.
+
+**`docs/TECHNICAL_SPEC.md` is read from the repo root at render time,
+not copied into `web/`.** The frontend has no backend/DB of its own, and
+copying the file in would let the site drift from the real spec the
+first time either one is edited without the other. This works locally
+(`process.cwd()` is `web/` under `next dev`/`next build`/`start`, so
+`../docs/TECHNICAL_SPEC.md` resolves), but on Vercel with Root Directory
+set to `/web` it requires that project's **"Include source files outside
+of the Root Directory in the Build Step"** setting enabled — a real,
+documented Vercel monorepo mechanism, not a workaround. Flagging this
+now so it's not forgotten when Vercel is actually connected.
+
+**A hydration-mismatch console error turned out to be a Turbopack dev-
+cache artifact, not a real bug — confirmed by testing, not assumed.**
+Playwright caught a real console warning on the Hero (`nativeButton`
+true by default on the primary CTA's `Button`, which renders a `Link`,
+not a `<button>` — the same class of bug fixed across 7a; fixed the same
+way, `nativeButton={false}`). But a second, separate hydration-mismatch
+error persisted afterward, always on the *same* secondary GitHub button,
+on every locale/breakpoint, only on the home page. Read Base UI's actual
+`mergeProps`/`useRenderElement` source rather than guessing: the
+className merge is a pure function with no `typeof window` branch, so it
+should be deterministic between server and client. Killed the `next dev`
+process, ran a clean `next build` + `next start`, and re-tested — zero
+console errors anywhere, on every page/locale/breakpoint. Conclusion:
+stale Turbopack HMR cache from iterating on Hero mid-session, not an
+actual SSR/CSR divergence. Recorded here specifically so this isn't
+re-investigated from scratch later if it resurfaces in dev — check
+against a clean production build first.
+
+**`#live-activity` is a real, working anchor with no matching section
+yet.** The Hero's primary CTA and the navbar's "Live activity" link both
+point at it; the section itself (checkpoint 7c, wired to
+`GET /v1/activity`) hasn't been built. The link 200s and the anchor is
+inert (no matching `id` on the page) rather than broken — intentional
+sequencing per the IA order in the spec, not an oversight.
+
+**i18n scope check**: per the spec's own instruction to flag rather than
+silently decide if the English-only-technical-content default reads
+wrong once built — it reads right. Every page chrome string (nav,
+headings, section intros, button labels) is bilingual; the Docs page's
+own markdown body, the curl examples in the API reference, and all
+code/JSON payloads stay in English regardless of locale, with a visible,
+translated note on the Docs page explaining why (`docs.sourceNote`,
+present in both `en.json` and `es.json`). Matches standard developer-
+documentation convention (technical reference content in English even on
+translated sites) and avoids the much larger, currently out-of-scope job
+of maintaining a translated fork of the technical spec that would drift
+from the real one.
+
+**Phase 7b gate met**: `npm run build`/`lint`/`tsc --noEmit` all clean;
+verified against a clean production build (not dev) with Playwright —
+zero console errors across Home and Docs, both locales, all three
+breakpoints (375/768/1440); every TOC entry resolves to a real heading
+and scrolls; every internal link 200s (`#live-activity` confirmed inert
+by design, not broken); code blocks are actually syntax-highlighted, not
+just structurally present. Screenshots reviewed in both light and dark.

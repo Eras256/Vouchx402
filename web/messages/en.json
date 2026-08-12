@@ -24,5 +24,63 @@
     "license": "License",
     "api": "Live API",
     "copyright": "© {year} Vouch402"
+  },
+  "hero": {
+    "eyebrow": "Live on Base mainnet",
+    "tagline": "x402-metered on-chain risk intelligence for autonomous agents on Base, with a built-in proof-of-fulfillment attestation layer.",
+    "primaryCta": "View live activity",
+    "secondaryCta": "GitHub"
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "subtitle": "Every paid request follows the same verifiable path — no step is hidden or assumed.",
+    "steps": {
+      "quote": {
+        "title": "Request a quote",
+        "description": "GET /v1/risk-score/:address with no payment returns 402 and the exact x402 payment requirements: price, recipient, asset, and a single-use resourceId."
+      },
+      "pay": {
+        "title": "Pay on-chain",
+        "description": "Send the quoted USDC amount directly to the payTo address. A real, standard ERC-20 transfer — no facilitator, no off-chain step to trust."
+      },
+      "fulfill": {
+        "title": "Get the score",
+        "description": "Retry with the transaction hash as proof. The server verifies the payment on-chain — amount, recipient, sender, not-already-used — before releasing anything."
+      },
+      "attest": {
+        "title": "Fulfillment is attested",
+        "description": "An EAS attestation recording exactly what was returned is created on-chain automatically, and its UID comes back in the response — resolvable independently, without trusting this page."
+      },
+      "dispute": {
+        "title": "Dispute if something's wrong",
+        "description": "POST /v1/disputes against the attestation, signed by the original payer. Filed on-chain, linked to the fulfillment it disputes — a permanent, public record either way."
+      }
+    }
+  },
+  "apiReference": {
+    "title": "API reference",
+    "subtitle": "Three endpoints. Copy, paste, run.",
+    "endpoints": {
+      "riskScore": {
+        "method": "GET",
+        "path": "/v1/risk-score/:address",
+        "description": "x402-gated risk score for a Base address."
+      },
+      "metrics": {
+        "method": "GET",
+        "path": "/v1/metrics",
+        "description": "Public, unpaid. Real aggregate counters, optionally filtered by network."
+      },
+      "disputes": {
+        "method": "POST",
+        "path": "/v1/disputes",
+        "description": "File a dispute against a fulfillment attestation, signed by the original payer."
+      }
+    }
+  },
+  "docs": {
+    "title": "Documentation",
+    "tableOfContents": "On this page",
+    "sourceNote": "This page renders docs/TECHNICAL_SPEC.md directly from the repository — technical reference content, kept in English regardless of site language, matching standard developer-documentation convention."
   }
 }

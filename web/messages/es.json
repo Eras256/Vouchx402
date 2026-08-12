@@ -24,5 +24,63 @@
     "license": "Licencia",
     "api": "API en vivo",
     "copyright": "© {year} Vouch402"
+  },
+  "hero": {
+    "eyebrow": "En vivo en Base mainnet",
+    "tagline": "Inteligencia de riesgo on-chain medida con x402 para agentes autónomos en Base, con una capa integrada de attestations de cumplimiento verificable.",
+    "primaryCta": "Ver actividad en vivo",
+    "secondaryCta": "GitHub"
+  },
+  "howItWorks": {
+    "title": "Cómo funciona",
+    "subtitle": "Cada solicitud pagada sigue el mismo camino verificable — ningún paso está oculto ni se da por hecho.",
+    "steps": {
+      "quote": {
+        "title": "Solicitar una cotización",
+        "description": "GET /v1/risk-score/:address sin pago devuelve 402 con los requisitos exactos de pago x402: precio, destinatario, activo, y un resourceId de un solo uso."
+      },
+      "pay": {
+        "title": "Pagar on-chain",
+        "description": "Envía el monto de USDC cotizado directamente a la dirección payTo. Una transferencia ERC-20 estándar y real — sin facilitador, sin ningún paso off-chain que haya que confiar a ciegas."
+      },
+      "fulfill": {
+        "title": "Obtener el score",
+        "description": "Reintenta con el hash de la transacción como prueba. El servidor verifica el pago on-chain — monto, destinatario, remitente, que no se haya usado antes — antes de entregar nada."
+      },
+      "attest": {
+        "title": "El cumplimiento se atestigua",
+        "description": "Se crea automáticamente una attestation en EAS que registra exactamente lo que se devolvió, y su UID llega en la respuesta — verificable de forma independiente, sin confiar en esta página."
+      },
+      "dispute": {
+        "title": "Disputar si algo está mal",
+        "description": "POST /v1/disputes contra la attestation, firmado por el pagador original. Se registra on-chain, vinculado al cumplimiento que disputa — un registro público y permanente en cualquier caso."
+      }
+    }
+  },
+  "apiReference": {
+    "title": "Referencia de la API",
+    "subtitle": "Tres endpoints. Copia, pega, ejecuta.",
+    "endpoints": {
+      "riskScore": {
+        "method": "GET",
+        "path": "/v1/risk-score/:address",
+        "description": "Score de riesgo protegido por x402 para una dirección de Base."
+      },
+      "metrics": {
+        "method": "GET",
+        "path": "/v1/metrics",
+        "description": "Público, sin pago. Contadores agregados reales, filtrables por red."
+      },
+      "disputes": {
+        "method": "POST",
+        "path": "/v1/disputes",
+        "description": "Presenta una disputa contra una attestation de cumplimiento, firmada por el pagador original."
+      }
+    }
+  },
+  "docs": {
+    "title": "Documentación",
+    "tableOfContents": "En esta página",
+    "sourceNote": "Esta página renderiza docs/TECHNICAL_SPEC.md directamente desde el repositorio — contenido de referencia técnica, que se mantiene en inglés sin importar el idioma del sitio, siguiendo la convención estándar de documentación para desarrolladores."
   }
 }
