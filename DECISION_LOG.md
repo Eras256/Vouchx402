@@ -170,6 +170,29 @@ Base Sepolia: calldata `0x62635f7a743976613433320b0080218021802180218021
 802180218021` ends with the exact `80218021...` marker.
 (https://sepolia.basescan.org/tx/0x4a991a1ee3683866b89312152d26d1693e859df4e77a4407ee94ed3163e1af5c)
 
+## 2026-08-12 — Phase 4: /v1/metrics, and a real nonce-race bug it surfaced
+
+Added `attestations` and `disputes` tables (src/lib/db.ts), written from
+the single choke points that create them (`attestFulfillment`,
+`submitDispute`) so counts stay accurate even for `status=Error`
+fulfillments that never produce a `requests_served` row. `/v1/metrics`
+is a straight read of these tables — no estimation, no caching.
+
+Building its test (pay-and-fulfill immediately followed by reading
+metrics) surfaced a second real bug from the same root cause as the
+EAS-read staleness above: right after the payment tx confirmed, the
+*next* transaction from the same address (the fulfillment attestation,
+sent via ethers) failed with `REPLACEMENT_UNDERPRICED` — ethers'
+"pending" nonce lookup landed on a Cloudflare backend node that hadn't
+caught up with the just-mined payment tx yet, computed an already-used
+nonce, and the resend was rejected. Confirmed live, not inferred from the
+test alone. Fixed with `withNonceRetry()` (src/lib/eas.ts): retries
+`sendTransaction` a few times with backoff on nonce-collision errors
+specifically, re-deriving the nonce from scratch each attempt (never
+reusing a stale one). Same mitigation philosophy as
+`getAttestationWithRetry` — targeted at the specific failure signature
+observed, not a blanket retry-everything wrapper.
+
 ## Open questions
 
 - Need `ETHERSCAN_API_KEY` from the user (or explicit sign-off to keep

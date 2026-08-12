@@ -2,6 +2,7 @@ import { keccak256, toBytes } from "viem";
 import { SchemaEncoder, ZERO_BYTES32 } from "@ethereum-attestation-service/eas-sdk";
 import { getEas } from "../lib/eas";
 import { easSchemaUidFulfillment, type NetworkName } from "../lib/env";
+import { recordAttestation } from "../lib/db";
 import { FULFILLMENT_SCHEMA } from "./schemas";
 
 /** Mirrors the `status` field of X402ServiceFulfillment in docs/TECHNICAL_SPEC.md. */
@@ -74,6 +75,8 @@ export async function attestFulfillment(
     },
   });
   const uid = await tx.wait();
+
+  recordAttestation({ uid, status: params.status, payer: params.payer, payee: params.payee, network: params.network });
 
   return { uid, responseHash };
 }

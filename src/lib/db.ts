@@ -60,6 +60,29 @@ function migrate(database: DatabaseSync) {
       score           INTEGER NOT NULL,
       served_at       INTEGER NOT NULL
     );
+
+    -- Phase 4 — every attestation and dispute this server has emitted,
+    -- for /v1/metrics. Written from the single choke points that create
+    -- them (attestFulfillment / submitDispute), so this stays accurate
+    -- even for status=Error fulfillment attestations that never produce
+    -- a requests_served row.
+    CREATE TABLE IF NOT EXISTS attestations (
+      uid             TEXT PRIMARY KEY,
+      status          INTEGER NOT NULL,
+      payer           TEXT NOT NULL,
+      payee           TEXT NOT NULL,
+      network         TEXT NOT NULL,
+      created_at      INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS disputes (
+      uid             TEXT PRIMARY KEY,
+      ref_uid         TEXT NOT NULL,
+      disputant       TEXT NOT NULL,
+      reason_code     INTEGER NOT NULL,
+      network         TEXT NOT NULL,
+      created_at      INTEGER NOT NULL
+    );
   `);
 }
 
@@ -150,4 +173,65 @@ export function recordRequestServed(params: {
        VALUES (?, ?, ?, ?, ?, ?)`
     )
     .run(params.resourceId, params.address, params.payer, params.txHash, params.score, Date.now());
+}
+
+// ---- Attestations & disputes (for /v1/metrics) ----
+
+export function recordAttestation(params: { uid: string; status: number; payer: string; payee: string; network: string }) {
+  getDb()
+    .prepare(
+      `INSERT INTO attestations (uid, status, payer, payee, network, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(params.uid, params.status, params.payer, params.payee, params.network, Date.now());
+}
+
+export function recordDispute(params: {
+  uid: string;
+  refUid: string;
+  disputant: string;
+  reasonCode: number;
+  network: string;
+}) {
+  getDb()
+    .prepare(
+      `INSERT INTO disputes (uid, ref_uid, disputant, reason_code, network, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(params.uid, params.refUid, params.disputant, params.reasonCode, params.network, Date.now());
+}
+
+export interface Metrics {
+  uniquePayers: number;
+  totalRequestsServed: number;
+  totalVolumeAtomic: string;
+  attestationCount: number;
+  disputeCount: number;
+}
+
+/**
+ * Every field here is a real query over this server's own records — see
+ * docs/TECHNICAL_SPEC.md ("real, not estimated"). `totalVolumeAtomic` is
+ * summed in JS via BigInt (not SQL SUM) to avoid any ambiguity in how
+ * node:sqlite's dynamic typing hands back large integers.
+ */
+export function getMetrics(): Metrics {
+  const database = getDb();
+
+  const uniquePayers = (
+    database.prepare(`SELECT COUNT(DISTINCT payer) as c FROM processed_payments`).get() as { c: number }
+  ).c;
+
+  const totalRequestsServed = (
+    database.prepare(`SELECT COUNT(*) as c FROM requests_served`).get() as { c: number }
+  ).c;
+
+  const amounts = database.prepare(`SELECT amount_atomic FROM processed_payments`).all() as { amount_atomic: string }[];
+  const totalVolumeAtomic = amounts.reduce((sum, row) => sum + BigInt(row.amount_atomic), 0n).toString();
+
+  const attestationCount = (
+    database.prepare(`SELECT COUNT(*) as c FROM attestations`).get() as { c: number }
+  ).c;
+
+  const disputeCount = (database.prepare(`SELECT COUNT(*) as c FROM disputes`).get() as { c: number }).c;
+
+  return { uniquePayers, totalRequestsServed, totalVolumeAtomic, attestationCount, disputeCount };
 }

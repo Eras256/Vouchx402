@@ -1,10 +1,10 @@
 import express, { type Express } from "express";
-import { isAddress } from "viem";
+import { isAddress, formatUnits } from "viem";
 import { defaultNetwork } from "../lib/chain";
 import { computeRiskScore } from "../scoring/score";
 import { issueQuote, decodePaymentHeader } from "./x402";
 import { verifyPayment, PaymentVerificationError } from "./payment";
-import { recordRequestServed } from "../lib/db";
+import { recordRequestServed, getMetrics } from "../lib/db";
 import { attestFulfillment, FulfillmentStatus } from "../attestation/middleware";
 import { submitDispute, DisputeError, DisputeReasonCode } from "../attestation/dispute";
 
@@ -99,8 +99,14 @@ export function createApp(): Express {
   });
 
   app.get("/v1/metrics", (_req, res) => {
-    // Built out in Phase 4 — see docs/TECHNICAL_SPEC.md.
-    res.status(501).json({ error: "Not implemented yet" });
+    const m = getMetrics();
+    res.status(200).json({
+      uniquePayers: m.uniquePayers,
+      totalRequestsServed: m.totalRequestsServed,
+      totalVolumeUsdc: formatUnits(BigInt(m.totalVolumeAtomic), 6),
+      attestationCount: m.attestationCount,
+      disputeCount: m.disputeCount,
+    });
   });
 
   app.post("/v1/disputes", async (req, res) => {

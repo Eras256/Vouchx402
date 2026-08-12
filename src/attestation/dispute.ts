@@ -2,6 +2,7 @@ import { recoverMessageAddress } from "viem";
 import { SchemaEncoder, ZERO_ADDRESS } from "@ethereum-attestation-service/eas-sdk";
 import { getEas, getAttestationWithRetry } from "../lib/eas";
 import { easSchemaUidDispute, type NetworkName } from "../lib/env";
+import { recordDispute } from "../lib/db";
 import { FULFILLMENT_SCHEMA, DISPUTE_SCHEMA } from "./schemas";
 
 export class DisputeError extends Error {}
@@ -83,6 +84,14 @@ export async function submitDispute(params: SubmitDisputeParams): Promise<{ uid:
     },
   });
   const uid = await tx.wait();
+
+  recordDispute({
+    uid,
+    refUid: params.refUID,
+    disputant,
+    reasonCode: params.reasonCode,
+    network: params.network,
+  });
 
   return { uid, disputant };
 }

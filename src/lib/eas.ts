@@ -14,6 +14,31 @@ export const EAS_ADDRESS = "0x4200000000000000000000000000000000000021";
 export const SCHEMA_REGISTRY_ADDRESS = "0x4200000000000000000000000000000000000020";
 
 /**
+ * Same class of public-RPC inconsistency as `getAttestationWithRetry`
+ * below, on the write path this time: a payment tx confirms via one RPC
+ * call, then the very next `sendTransaction` (for the fulfillment
+ * attestation, same address) reads "pending" nonce from a Cloudflare
+ * backend node that hasn't caught up yet, computes an already-used nonce,
+ * and the resend is rejected as `REPLACEMENT_UNDERPRICED` — observed live
+ * against `sepolia.base.org` (see DECISION_LOG.md), not hypothetical.
+ * Retrying re-triggers ethers' own nonce lookup from scratch each time,
+ * which self-heals once propagation catches up.
+ */
+async function withNonceRetry<T>(fn: () => Promise<T>, { retries = 4, delayMs = 800 }: { retries?: number; delayMs?: number } = {}): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      const message = (err as { shortMessage?: string })?.shortMessage ?? "";
+      const isNonceRace = code === "REPLACEMENT_UNDERPRICED" || code === "NONCE_EXPIRED" || /nonce|replacement/i.test(message);
+      if (!isNonceRace || attempt >= retries) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+    }
+  }
+}
+
+/**
  * Every transaction Vouch402's own wallet sends goes through this signer
  * (schema registration, attestations) — overriding `sendTransaction` here
  * is the "client-level, not per-call" attribution point docs/TECHNICAL_SPEC.md
@@ -22,7 +47,10 @@ export const SCHEMA_REGISTRY_ADDRESS = "0x42000000000000000000000000000000000000
  */
 class AttributedWallet extends EthersWallet {
   override sendTransaction(tx: TransactionRequest): Promise<TransactionResponse> {
-    return super.sendTransaction({ ...tx, data: withAttribution((tx.data as string) ?? "0x") });
+    const attributedTx = { ...tx, data: withAttribution((tx.data as string) ?? "0x") };
+    // Re-invoking super.sendTransaction on each retry re-derives the
+    // nonce from scratch (never reuses a stale one from a prior attempt).
+    return withNonceRetry(() => super.sendTransaction(attributedTx));
   }
 }
 
