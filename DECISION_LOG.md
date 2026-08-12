@@ -227,6 +227,40 @@ Checklist manually, but that self-review can't complete honestly until
 the hosting gap above is resolved (the checklist requires a real
 `allowlist`/endpoint host to check against).
 
+## 2026-08-12 — Deployment groundwork: Fly.io, blocked on account billing
+
+User chose Fly.io for hosting (resolves the Phase 5 blocker above once
+live). Built the production path:
+
+- `Dockerfile` — multi-stage, `node:24-slim` (matches the Node version
+  `node:sqlite` was confirmed working unflagged on locally, not a generic
+  LTS guess). Production build uses a dedicated `tsconfig.build.json`
+  (`rootDir: src`) instead of the root tsconfig — the root config's
+  `rootDir: "."` was nesting compiled output under `dist/src/...` and
+  compiling `test/**/*` too (which isn't even copied into the Docker
+  build stage). Caught by actually running the build locally before
+  writing the Dockerfile's `CMD`, not assumed from the tsconfig as
+  written.
+- `src/lib/keystore.ts` now accepts the encrypted keystore JSON inline via
+  `DEPLOYER_KEYSTORE_JSON` (a Fly secret), falling back to the local
+  `~/.foundry/keystores/<account>` file for dev. The private key never
+  needs to be baked into a Docker image layer — the deployed instance
+  only ever holds the still-encrypted JSON plus the password secret,
+  both as Fly secrets.
+- `fly.toml` — region `dfw` (matches the user's other Fly apps), 512MB,
+  scale-to-zero (`min_machines_running: 0`, cost-conscious for a
+  low-traffic v0 service), `NETWORK=base-sepolia` — **not** `base` yet,
+  since the Phase 3 mainnet gate isn't actually met. Flip this once it
+  is, not before.
+- Verified the compiled build actually boots and serves real data
+  (`GET /v1/metrics` against `node dist/server/index.js` locally)
+  before treating any of this as done.
+
+**Blocked**: `flyctl apps create` failed — the account has overdue
+invoices (`fly.io/dashboard/vaiosx/billing`). Not something to work
+around; needs the user to clear it. Everything above is ready to deploy
+the moment that's resolved.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
