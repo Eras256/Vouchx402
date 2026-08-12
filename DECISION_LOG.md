@@ -67,6 +67,59 @@ https://sepolia.basescan.org/tx/0x4a9238c8ec1a9eef21dd14680a3e79a50c480f035f07dd
 (score=98 — correctly reads as high-risk for a wallet with no prior
 history, consistent with the v0 heuristic in src/scoring/score.ts).
 
+## 2026-08-12 — Phase 2: x402-SAP attestations, EAS on Base Sepolia
+
+`X402ServiceFulfillment` and `X402ServiceDispute` registered on Base
+Sepolia (non-revocable — see schema-string comments in
+src/attestation/schemas.ts for why). EAS itself needed no deployment: it's
+an OP Stack predeploy at `0x4200...0021` (SchemaRegistry at `...0020`),
+same address on Base mainnet and Base Sepolia — verified against Base's
+own contract-address docs and the eas-contracts deployment manifests for
+both networks before writing any code against it, not assumed.
+
+Reconciled one gap between this build prompt and docs/TECHNICAL_SPEC.md:
+the prompt describes attesting "after a successful response is sent",
+but the spec's API contract returns `attestationUid` *in* that response
+body. Implemented as: compute the response payload, attest synchronously,
+then send the response with the real UID attached — satisfies the
+documented contract. `responseHash` covers only the substantive payload
+(`address/score/signals`), not `attestationUid` itself, avoiding a
+circular hash.
+
+Fulfillment failures that happen *after* payment is verified (scoring or
+attestation itself throwing) still get a best-effort `status=Error`
+attestation before the 500 response — payment is already consumed at that
+point and can't be un-charged; the dispute flow is the payer's recourse,
+which is exactly why it exists.
+
+## 2026-08-12 — Public RPC flakiness: root-caused, mitigated, not eliminated
+
+First full-suite run against real funds surfaced `eas.getAttestation()`
+returning a zeroed/not-found struct immediately after a confirmed attest
+tx. Root-caused (not assumed) by querying the same UID directly via `cast
+call` moments later and getting real data back — this is read-after-write
+lag on `sepolia.base.org`, a shared, Cloudflare-fronted public RPC (the
+build-on-base skill's own words: "rate-limited... not for production").
+Two mitigations applied:
+- `getAttestationWithRetry()` (src/lib/eas.ts) — retries a few times with
+  backoff specifically when a read comes back as the EAS "not found"
+  sentinel, since that's a successful-but-stale response, not a request
+  error viem's own retry logic would catch.
+- Widened viem's http transport retry budget for every RPC call
+  (`retryCount: 6, retryDelay: 750ms, timeout: 20s` — see
+  `httpTransport()` in src/lib/chain.ts) after directly observing a bare
+  Cloudflare 502 from `sepolia.base.org` on a manual probe.
+
+After both fixes: 6 of 8 back-to-back full-suite runs passed cleanly; the
+remaining failures matched the same public-RPC-instability signature
+(long duration from retry exhaustion). Not chasing this further with more
+real transactions — the actual mechanism (payment verification,
+attestation, dispute linking) has been independently confirmed correct
+multiple times over via real, explorer-resolvable Base Sepolia state.
+Production use should sit behind a dedicated RPC provider, per the
+build-on-base skill's own guidance — that's an infra choice for Phase 3+
+deployment, not a code fix.
+
 ## Open questions
 
 _(none currently blocking)_

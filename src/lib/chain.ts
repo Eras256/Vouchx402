@@ -5,6 +5,21 @@ import { env, rpcUrlFor, type NetworkName } from "./env";
 const clients = new Map<NetworkName, PublicClient>();
 
 /**
+ * `mainnet.base.org` / `sepolia.base.org` are shared public RPCs fronted
+ * by Cloudflare — observed returning transient 502s under normal use (see
+ * DECISION_LOG.md). viem's default retry budget (3 attempts) isn't always
+ * enough to ride that out; this widens it. Still only a mitigation, not a
+ * fix — the build-on-base skill's own guidance is a dedicated node
+ * provider for anything beyond local dev/testing.
+ */
+export function httpTransport(url: string) {
+  if (!url.startsWith("https://")) {
+    throw new Error(`Refusing non-HTTPS RPC endpoint: ${url}`);
+  }
+  return http(url, { retryCount: 6, retryDelay: 750, timeout: 20_000 });
+}
+
+/**
  * Returns a viem PublicClient for the given Base network. HTTPS-only RPC
  * per the build-on-base skill's safety guardrails; chain ID is bound via
  * viem's `chain` config so responses are implicitly checked against it.
@@ -14,9 +29,6 @@ export function publicClientFor(network: NetworkName): PublicClient {
   if (cached) return cached;
 
   const url = rpcUrlFor(network);
-  if (!url.startsWith("https://")) {
-    throw new Error(`Refusing non-HTTPS RPC endpoint for ${network}: ${url}`);
-  }
 
   // Cast: `base` and `baseSepolia` chain configs produce structurally
   // distinct (op-stack-extended) client types that don't unify under a
@@ -24,7 +36,7 @@ export function publicClientFor(network: NetworkName): PublicClient {
   // at runtime for the read-only calls this module makes.
   const client = createPublicClient({
     chain: network === "base" ? base : baseSepolia,
-    transport: http(url),
+    transport: httpTransport(url),
   }) as PublicClient;
   clients.set(network, client);
   return client;

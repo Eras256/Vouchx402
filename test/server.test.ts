@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { Server } from "node:http";
-import { createWalletClient, http } from "viem";
+import { createWalletClient } from "viem";
 import { baseSepolia } from "viem/chains";
 import { createApp } from "../src/server/app";
 import { loadDeployerAccount } from "../src/lib/keystore";
-import { erc20Abi, publicClientFor } from "../src/lib/chain";
+import { erc20Abi, publicClientFor, httpTransport } from "../src/lib/chain";
 import { env, explorerBaseFor } from "../src/lib/env";
 import type { X402PaymentRequiredBody } from "../src/server/x402";
 
@@ -68,7 +68,7 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
     const walletClient = createWalletClient({
       account,
       chain: baseSepolia,
-      transport: http(env.baseSepoliaRpcUrl),
+      transport: httpTransport(env.baseSepoliaRpcUrl),
     });
 
     const txHash = await walletClient.writeContract({

@@ -64,10 +64,17 @@ export function etherscanApiBaseFor(network: NetworkName): string {
   return network === "base" ? "https://api.basescan.org/api" : "https://api-sepolia.basescan.org/api";
 }
 
+// These two read `process.env` live (not the `env` snapshot above) because
+// `registerSchemas()` (src/attestation/schemas.ts) can write a freshly
+// registered UID mid-process — e.g. from the same test run that then
+// immediately needs to use it. A frozen snapshot would miss that update
+// until the process restarted.
 export function easSchemaUidFulfillment(network: NetworkName): string {
-  return network === "base" ? env.easSchemaUidFulfillmentMainnet : env.easSchemaUidFulfillmentSepolia;
+  const key = network === "base" ? "EAS_SCHEMA_UID_FULFILLMENT_MAINNET" : "EAS_SCHEMA_UID_FULFILLMENT_SEPOLIA";
+  return process.env[key] ?? "";
 }
 
 export function easSchemaUidDispute(network: NetworkName): string {
-  return network === "base" ? env.easSchemaUidDisputeMainnet : env.easSchemaUidDisputeSepolia;
+  const key = network === "base" ? "EAS_SCHEMA_UID_DISPUTE_MAINNET" : "EAS_SCHEMA_UID_DISPUTE_SEPOLIA";
+  return process.env[key] ?? "";
 }
