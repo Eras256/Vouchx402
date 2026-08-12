@@ -504,6 +504,17 @@ just the one real Phase-3-gate mainnet transaction from the 41
 accumulated Sepolia test transactions in the same local database: exact
 counts, not approximate.
 
+## 2026-08-12 — First real mainnet activity on the live deployment
+
+Ran one real paid request against `vouch402.fly.dev` itself (not just
+locally) after the network-filtering deploy above, to close the gap
+found earlier: https://basescan.org/tx/0x0afadfd21746ace6c99d7232446c77b83c5a423304e7d7d3b14933ae5752eafc
+`200`, real score, `attestationUid=0xc15b1139d2b9af18ba81004532229c3d4ccbbdd176410e6b59f7eec20a9d9909`.
+Confirmed `?network=base` now reflects it (`totalRequestsServed:1,
+attestationCount:1`) and `/v1/activity?network=base` returns it with a
+working explorer link. The live deployment now has real mainnet data for
+the Phase 7 frontend to display, not an all-zero dashboard.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
