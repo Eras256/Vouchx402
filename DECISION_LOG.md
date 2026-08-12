@@ -682,6 +682,17 @@ of the Root Directory in the Build Step"** setting enabled — a real,
 documented Vercel monorepo mechanism, not a workaround. Flagging this
 now so it's not forgotten when Vercel is actually connected.
 
+**Superseded below (2026-08-12, "Vercel CLI setup") — that setting
+doesn't exist.** Checked the actual current Vercel docs before relying
+on it for real, rather than assuming it was still there once Vercel
+setup actually started: `vercel.com/docs/builds/configure-a-build` is
+explicit that Root Directory is a hard boundary — *"Your app will not be
+able to access files outside of that directory. You also cannot use
+`..` to move up a level."* No toggle relaxes that. This was a real wrong
+assumption in this entry, left visible rather than quietly edited away —
+see the later entry for the actual fix (a committed, synced copy inside
+`web/`, not a parent-directory read).
+
 **A hydration-mismatch console error turned out to be a Turbopack dev-
 cache artifact, not a real bug — confirmed by testing, not assumed.**
 Playwright caught a real console warning on the Hero (`nativeButton`
@@ -897,3 +908,49 @@ transaction, and the resulting final fulfillment/attestation render.
 That needs one real click-through by a human with a funded testnet
 wallet — the architecture and every step up to that handoff is now
 verified against real, live systems on both ends, not guessed.
+
+## 2026-08-12 — Vercel CLI setup: a real gap in the Docs page's file
+access, found before it shipped broken
+
+Used the Vercel CLI (per the user's explicit request to set up hosting
+this way, with auto-deploy on every push) to create and link a new
+project, `vouch402`, scoped to `web/`. Two things surfaced along the way:
+
+**Fixed: the Docs page's cross-directory file read would not have
+worked on Vercel at all.** The 7b entry above assumed a Vercel project
+setting would let a Root-Directory-scoped project read
+`../docs/TECHNICAL_SPEC.md`. Checked the actual current Vercel docs
+before trusting that for real (not re-relying on memory once it
+actually mattered): no such setting exists — Root Directory is a hard
+boundary, full stop. Fixed properly, not worked around: added
+`web/scripts/sync-docs.mjs`, which copies `docs/TECHNICAL_SPEC.md` into
+a committed `web/content/technical-spec.md`, wired into `predev`/
+`prebuild` so the local copy can't silently go stale during normal
+development, and guarded to no-op (not error) when the parent directory
+isn't reachable — which is exactly the Vercel case, where the already-
+committed copy is what actually gets read. `docs/page.tsx` now reads
+that committed copy instead of reaching across `..`. Verified the fix
+actually addresses the real constraint, not just quieted a warning: read
+the exact path Vercel would use (`web/content/technical-spec.md`,
+resolvable from `web/` alone, no parent access needed) directly, and
+re-ran the full Docs page Playwright check against a fresh build — same
+zero-console-errors, correctly-rendered result as before the change.
+
+**Blocked on one unavoidable manual step: connecting GitHub to Vercel.**
+`vercel git connect` failed with "You need to add a Login Connection to
+your GitHub account first" — this is an account-level OAuth
+authorization between the user's own Vercel and GitHub accounts, which
+by its nature cannot be completed by a CLI token; it needs a real
+browser session under the user's own login on both sides. Confirmed
+there's no CLI/API path around this (tried `vercel link --repo` from the
+repo root per Vercel's own documented monorepo CLI flow first — it
+queries for projects already connected to the repo URL and finds none,
+consistent with the repo genuinely not being connected yet). This is the
+one thing only the user can do; everything else is ready to go the
+moment they do.
+
+**Still to do once that's unblocked**: set the `vouch402` project's Root
+Directory to `web` (it's currently `.`, an artifact of how it was
+linked, and needs fixing before a Git-triggered build would find the
+Next.js app at all), then `vercel git connect` again, which should also
+fire the first Git-triggered deployment automatically.

@@ -9,16 +9,17 @@ import { markdownComponents } from "@/components/docs/markdown-components";
 import { TableOfContents } from "@/components/docs/table-of-contents";
 import { extractToc } from "@/lib/toc";
 
-// docs/TECHNICAL_SPEC.md lives at the repo root — this is a single repo,
-// not a separate package, and the frontend has no backend/DB of its own
-// to duplicate content into, so it's read directly rather than copied
-// into web/ (which would drift out of sync with the real spec the first
-// time either one is edited). Deploying with Vercel's Root Directory set
-// to /web needs its "Include source files outside of the Root Directory"
-// project setting enabled for this parent-relative read to resolve there
-// — see DECISION_LOG.md.
+// Reads the committed copy at web/content/technical-spec.md, not
+// docs/TECHNICAL_SPEC.md at the repo root directly — Vercel's Root
+// Directory setting is a hard boundary ("Your app will not be able to
+// access files outside of that directory... cannot use `..` to move up
+// a level" — vercel.com/docs/builds/configure-a-build, checked directly
+// before this was written; an earlier version of this file assumed a
+// dashboard toggle could relax that, which turned out not to exist).
+// scripts/sync-docs.mjs keeps the copy in sync — see that file and
+// DECISION_LOG.md for the full reasoning.
 function readTechnicalSpec(): string {
-  const specPath = path.join(process.cwd(), "..", "docs", "TECHNICAL_SPEC.md");
+  const specPath = path.join(process.cwd(), "content", "technical-spec.md");
   return fs.readFileSync(specPath, "utf-8");
 }
 
