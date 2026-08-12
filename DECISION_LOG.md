@@ -335,3 +335,26 @@ resolved → `/v1/metrics` reflecting all of it. Phase 6 gate met.
   one. Not blocking Phase 3's gate (payment + attestation correctness
   don't depend on scoring accuracy), but should be resolved before this
   is presented as "live."
+
+## 2026-08-12 — Pre-push safety check, and untracking vendored skill docs
+
+Ran a full pre-push safety check before making this repo public:
+`.env`/secrets never committed at any point in history (verified via
+`git log --all --full-history`), no real secret values anywhere in
+history or the current tree (only variable names/placeholders), no
+grant-program or reviewer-facing framing anywhere in README/this file/
+commit messages, no unwanted tracked files (`node_modules`, `.env`,
+`dist/`), and this file's own Phase 3 status already read honestly as
+"in progress."
+
+One thing outside the checklist: 128 of 164 tracked files were vendored
+third-party skill reference docs (`.agents/`, `.claude/` — the
+`base-mcp`/`build-on-base` material the build agent used, not Vouch402's
+own code). Untracked and gitignored them — not a security issue (that
+content is already public in `base/skills`' own repo), but bloat that
+doesn't belong in this project's public history going forward. Chose to
+keep full commit history rather than squash: it's the first push, so
+squashing was still a clean option, but the phase-by-phase commits are
+exactly what this file's entries document — real gates, real bugs found
+live, and the reasoning behind each fix. The vendor docs remaining
+visible in early commits aren't a secret, just noise.

@@ -4,3 +4,8 @@ dist/
 *.log
 .DS_Store
 data/*.sqlite*
+
+# Vendored third-party skill reference docs used by the build agent —
+# not Vouch402's own code, kept local only. See DECISION_LOG.md.
+.agents/
+.claude/
