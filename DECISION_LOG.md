@@ -385,6 +385,29 @@ verified that too. Waiting on the user for an address they actually
 control before `X402_PAY_TO_ADDRESS_MAINNET` gets set; the signer wallet
 keeps its existing role (just needs gas ETH, never holds revenue).
 
+## 2026-08-12 — `.env.local` support, and why the funding wallet doesn't need a raw private key
+
+Added `.env.local` as an optional, gitignored override layer on top of
+`.env` (loaded second, `override: true`, in src/lib/env.ts) — standard
+convention elsewhere (Next.js/Vite/CRA), not previously supported here.
+Verified directly: a key absent from `.env.local` keeps `.env`'s value
+(nothing gets silently blanked), and a key present in `.env.local`
+overrides it. Using it to hold the Phase 3 mainnet-cutover additions
+(`X402_PAY_TO_ADDRESS_MAINNET`, currently blank) without duplicating
+unrelated secrets across two files — avoids the drift risk of two full
+copies, and avoids re-exposing `DEPLOYER_KEYSTORE_PASSWORD` in a second
+place for no reason.
+
+Also worth recording since it came up directly: this project has no raw
+private-key env var anywhere, by design, for two independent reasons —
+(1) x402 payments are signed and sent by the paying agent, never by
+Vouch402 itself (the server only verifies a settled payment after the
+fact), so there's no key needed on that side at all; (2) the one key
+Vouch402's server *does* need (the EAS/attestation signer) is only ever
+handled as an encrypted Foundry keystore
+(`DEPLOYER_KEYSTORE_JSON`/`_PASSWORD`), never a plaintext key — adding a
+`PRIVATE_KEY=` variable would be a regression from that.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

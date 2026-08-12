@@ -1,7 +1,16 @@
 import dotenv from "dotenv";
 import path from "node:path";
 
-dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
+const ROOT = path.resolve(__dirname, "..", "..");
+dotenv.config({ path: path.join(ROOT, ".env") });
+// .env.local is optional and loaded second, with override — standard
+// convention (Next.js/Vite/CRA all do this): .env is the tracked-in-spirit
+// baseline (still gitignored here, but the "normal" file), .env.local is
+// for values you don't want duplicated across files (e.g. only what's
+// new/different for a mainnet cutover). Missing keys in .env.local simply
+// keep whatever .env already set — this never blanks out a value, only
+// overrides the ones actually present here.
+dotenv.config({ path: path.join(ROOT, ".env.local"), override: true });
 
 function required(name: string): string {
   const v = process.env[name];
