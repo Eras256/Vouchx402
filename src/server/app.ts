@@ -10,6 +10,12 @@ import { submitDispute, DisputeError, DisputeReasonCode } from "../attestation/d
 
 export function createApp(): Express {
   const app = express();
+  // Fly (and most PaaS) terminate TLS at the edge and forward plain HTTP
+  // internally — without this, req.protocol always reads "http", so the
+  // `resource` field in the 402 body would claim an insecure URL even
+  // when the actual request came in over HTTPS. Confirmed live on the
+  // Fly deployment before this was added — not a hypothetical.
+  app.set("trust proxy", true);
   app.use(express.json());
 
   app.get("/v1/risk-score/:address", async (req, res) => {

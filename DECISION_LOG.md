@@ -261,6 +261,43 @@ invoices (`fly.io/dashboard/vaiosx/billing`). Not something to work
 around; needs the user to clear it. Everything above is ready to deploy
 the moment that's resolved.
 
+## 2026-08-12 — Deployed live; found a real gap via the trial account's kill policy
+
+Live at `https://vouch402.fly.dev`. Fixed one real bug before it worked
+at all: `req.protocol` read `http` even over HTTPS, because Fly
+terminates TLS at the edge and Express doesn't trust the forwarded
+proto by default — the 402 body's `resource` field was claiming an
+insecure URL. Fixed with `app.set("trust proxy", true)`; confirmed the
+field reads `https://` correctly afterward, not just assumed.
+
+Running a real paid request against the live deployment (to verify the
+deployed instance's own keystore-secret decryption and EAS signing
+actually work, not just the local path) surfaced something more
+important: the account this app was created under is on Fly's free
+**trial** tier, which force-kills any machine after 5 minutes of runtime
+regardless of activity ("add a credit card to run longer than 5m0s").
+The kill landed mid-request — payment already verified and marked
+processed, but the attestation/response never completed, so the caller
+got nothing back for a payment that had already gone through.
+
+That's not just a trial-tier quirk to shrug off: `auto_stop_machines:
+"stop"` (our own scale-to-zero config) sends the *same* SIGINT on any
+idle auto-stop, so a real request racing a normal scale-down could hit
+the identical failure mode later, trial tier or not. Added graceful
+shutdown (`src/server/index.ts`): SIGINT/SIGTERM now drains in-flight
+requests (stop accepting new connections, let existing ones finish, 25s
+cap) instead of Node's default immediate exit. Verified against real
+behavior, not assumed correct from adding the handler alone — the
+before-state (payment recorded, no attestation, no response) is on the
+live volume as `uniquePayers:1` with `attestationCount:0` from that
+first attempt.
+
+**Still needs the user**: the trial 5-minute cap itself isn't something
+graceful shutdown fully solves — a request that's still running at the
+25s drain cap would still be cut off, just less abruptly than before.
+Add a credit card to the Fly account (`neuralsol7@gmail.com`) to lift the
+trial cap for real reliability.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402

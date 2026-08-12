@@ -8,7 +8,7 @@ integration: http-api
 chains: [base]
 requires:
   shell: none
-  allowlist: [TODO-vouch402-not-yet-deployed]
+  allowlist: [vouch402.fly.dev]
   externalMcp: null
   cliPackage: null
 auth: none
@@ -123,6 +123,11 @@ For `POST /v1/disputes`, `sign` produces the personal-sign signature described i
 
 ## Notes
 
+- The live instance (`vouch402.fly.dev`) currently runs on Base Sepolia
+  while the mainnet cutover is in progress — `chains: [base]` above
+  declares the intended production network, not necessarily what's live
+  at any given moment. Check a `402` response's `accepts[0].network`
+  field for the network actually in effect before relying on it.
 - `score` is an explicitly-scoped v0 heuristic (wallet age, tx count, contract-interaction diversity, flag-list membership) — not a complete risk model. The bundled flag list ships empty in this version (no unverified data bundled without a cited source); `flagged` will read `false` for every address until it's populated from a real source. Don't present `score` to end users as authoritative without this caveat.
 - USDC on Base mainnet: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
 - Fulfillment and dispute attestations are on EAS, native to Base (and Base Sepolia) as an OP Stack predeploy at `0x4200000000000000000000000000000000000021` (SchemaRegistry `0x4200000000000000000000000000000000000020`) — resolvable via any standard EAS explorer/SDK, independent of this plugin.
