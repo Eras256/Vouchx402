@@ -1,4 +1,4 @@
-import { decodeEventLog, type Hash } from "viem";
+import { decodeEventLog, TransactionReceiptNotFoundError, type Hash } from "viem";
 import { publicClientFor, erc20Abi } from "../lib/chain";
 import { getQuote, consumeQuote, isPaymentProcessed, markPaymentProcessed } from "../lib/db";
 import type { NetworkName } from "../lib/env";
@@ -41,8 +41,17 @@ export async function verifyPayment(network: NetworkName, proof: PaymentProof): 
 
   const client = publicClientFor(network);
 
-  // 2. Confirm the payment actually settled.
-  const receipt = await client.getTransactionReceipt({ hash: proof.txHash as Hash });
+  // 2. Confirm the payment actually settled. A tx that hasn't been mined
+  // yet is a client-retry case (402), not a server fault (500).
+  let receipt;
+  try {
+    receipt = await client.getTransactionReceipt({ hash: proof.txHash as Hash });
+  } catch (err) {
+    if (err instanceof TransactionReceiptNotFoundError) {
+      throw new PaymentVerificationError("Payment transaction not yet confirmed on-chain; retry shortly.");
+    }
+    throw err;
+  }
   if (receipt.status !== "success") {
     throw new PaymentVerificationError(`Payment transaction did not succeed: status=${receipt.status}`);
   }

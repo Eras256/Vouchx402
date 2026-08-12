@@ -46,14 +46,27 @@ real usage involves two distinct parties (a paying agent, and Vouch402's
 receiving address). Revisit if/when a dedicated payer test identity is
 needed.
 
+## 2026-08-12 — Payment verification: unmined tx is a 402, not a 500
+
+First real-funds test run surfaced a bug: `viem`'s `writeContract` resolves
+as soon as a transaction is *submitted*, not once it's mined. The server's
+`getTransactionReceipt` call was racing ahead of confirmation and throwing
+`TransactionReceiptNotFoundError`, which fell through to a generic 500.
+Fixed two ways: (1) `payment.ts` now catches that specific error and
+reports it as a `PaymentVerificationError` (402, "not yet confirmed on-
+chain; retry shortly") instead of a server fault; (2) the integration test
+calls `waitForTransactionReceipt` before presenting proof, matching what a
+real paying agent should do.
+
+## Phase 1 gate — met (2026-08-12)
+
+All three integration tests pass against live Base Sepolia state:
+unpaid request -> 402, real settled USDC payment -> 200 with a real score,
+and replay of the same proof -> rejected. Settlement tx:
+https://sepolia.basescan.org/tx/0x4a9238c8ec1a9eef21dd14680a3e79a50c480f035f07dd221c37d2fa852095b4
+(score=98 — correctly reads as high-risk for a wallet with no prior
+history, consistent with the v0 heuristic in src/scoring/score.ts).
+
 ## Open questions
 
-- Phase 1's live-payment integration test is code-complete and has been
-  run against Base Sepolia: the unpaid-request (402) and replay-rejection
-  assertions pass. The paid-request assertion (`pays with real testnet
-  USDC and returns 200`) is currently blocked — the generated deployer/
-  payTo wallet has 0 Base Sepolia ETH and USDC, so the test's own payment
-  transaction reverts on gas estimation (`gas required exceeds allowance`).
-  Not a code defect: confirmed by decrypting the keystore and checking
-  `cast balance` directly. Needs the wallet funded via the CDP faucet
-  (ETH) and Circle faucet (USDC) before the Phase 1 gate can be called met.
+_(none currently blocking)_

@@ -4,7 +4,7 @@ import { createWalletClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { createApp } from "../src/server/app";
 import { loadDeployerAccount } from "../src/lib/keystore";
-import { erc20Abi } from "../src/lib/chain";
+import { erc20Abi, publicClientFor } from "../src/lib/chain";
 import { env, explorerBaseFor } from "../src/lib/env";
 import type { X402PaymentRequiredBody } from "../src/server/x402";
 
@@ -27,7 +27,7 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
   beforeAll(async () => {
     const app = createApp();
     await new Promise<void>((resolve) => {
-      server = app.listen(0, resolve);
+      server = app.listen(0, () => resolve());
     });
     const address = server.address();
     if (!address || typeof address === "string") throw new Error("Failed to bind test server");
@@ -79,6 +79,12 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
     });
 
     console.log(`[Phase 1] Base Sepolia payment tx: ${explorerBaseFor("base-sepolia")}/tx/${txHash}`);
+
+    // writeContract returns as soon as the tx is submitted, not once it's
+    // mined — wait for a real confirmation before presenting proof, same
+    // as a real agent would.
+    const receipt = await publicClientFor("base-sepolia").waitForTransactionReceipt({ hash: txHash });
+    expect(receipt.status).toBe("success");
 
     // 3. Retry with proof.
     const proof = {
