@@ -193,7 +193,48 @@ reusing a stale one). Same mitigation philosophy as
 `getAttestationWithRetry` — targeted at the specific failure signature
 observed, not a blanket retry-everything wrapper.
 
+## 2026-08-12 — Phase 5 draft: plugins/vouch402.md, and a real blocker it surfaced
+
+Read the current `.agents/skills/base-mcp/references/plugin-spec.md` in
+full before writing anything (not from memory or from how this build
+prompt described it). One correction that check caught: the build prompt
+suggested `agent-commerce` might need adding to the tag vocabulary — it's
+already there. Two tags genuinely are new and get appended to that
+vocabulary list as part of the eventual PR: `risk-scoring`, `attestations`.
+
+Classified `integration: http-api` — Vouch402 returns payment
+requirements then JSON data, never calldata for the caller to submit
+itself; the only Base MCP call in the flow is the `send_calls` USDC
+payment. `risk: [irreversible]` — payment settles before the caller knows
+whether fulfillment will succeed, and there's no refund path, only the
+dispute flow.
+
+**Real blocker, not a formality**: `requires.allowlist` and the
+`## Endpoints` section need a real public host, and Vouch402 has never
+been deployed anywhere reachable — every phase so far has run against
+local dev + direct Base RPC/EAS calls. This gap was never addressed
+anywhere in the phase list. Wrote the plugin file with every section that
+*is* independently verifiable against the actual code (endpoint shapes,
+request/response bodies, orchestration steps, submission mapping) but
+left `requires.allowlist` as an explicit `TODO-vouch402-not-yet-deployed`
+placeholder rather than inventing a domain — a plugin file with a
+fabricated host would look done without being true, which is exactly what
+the stricter Phase 5 bar rules out.
+
+The bundled `plugin-review` skill isn't available in this environment
+(not in the invocable skill list) — self-reviewing against the Authoring
+Checklist manually, but that self-review can't complete honestly until
+the hosting gap above is resolved (the checklist requires a real
+`allowlist`/endpoint host to check against).
+
 ## Open questions
+
+- **Hosting decision needed before Phase 5 can actually close.** Vouch402
+  needs to be deployed somewhere publicly reachable (a domain + a running
+  instance of the Express server) before `plugins/vouch402.md` has a real
+  `requires.allowlist` value and before the PR is submission-ready. This
+  is a real infra/cost decision (platform, domain, who pays for it) —
+  not guessing at a provider or fabricating a placeholder domain.
 
 - Need `ETHERSCAN_API_KEY` from the user (or explicit sign-off to keep
   running with 2 of 4 scoring signals structurally zeroed) before the
