@@ -77,12 +77,17 @@ export function getSchemaRegistry(network: NetworkName): SchemaRegistry {
 /**
  * `sepolia.base.org` / `mainnet.base.org` are shared, load-balanced public
  * RPC endpoints (the build-on-base skill's own guidance: "rate-limited...
- * not for production"). In practice this means a read immediately after a
- * write can land on a backend node that hasn't caught up yet and come back
- * with a zeroed/not-found struct even though the write already landed —
- * confirmed by re-querying the same UID moments later. Retrying a couple
- * of times with backoff absorbs that without masking a genuinely missing
- * attestation (which stays not-found across retries too).
+ * not for production"). Two distinct failure modes observed live, both
+ * handled here:
+ *  1. A read immediately after a write lands on a backend node that
+ *     hasn't caught up yet and comes back with a zeroed/not-found struct
+ *     even though the write already landed — confirmed by re-querying
+ *     the same UID moments later.
+ *  2. The request itself fails outright (a bare Cloudflare 502) — this
+ *     throws rather than returning a struct at all, so it needs its own
+ *     catch, not just the not-found check above. Missed this the first
+ *     time (only handled case 1) until `scripts/demo.ts` hit exactly this
+ *     mid-run and the retry loop didn't catch it — see DECISION_LOG.md.
  */
 export async function getAttestationWithRetry(
   eas: EAS,
@@ -90,15 +95,15 @@ export async function getAttestationWithRetry(
   { retries = 3, delayMs = 1500 }: { retries?: number; delayMs?: number } = {}
 ) {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const attestation = await eas.getAttestation(uid);
-    if (attestation.attester !== ZERO_ADDRESS) {
-      return attestation;
+    try {
+      const attestation = await eas.getAttestation(uid);
+      if (attestation.attester !== ZERO_ADDRESS || attempt >= retries) {
+        return attestation; // found, or exhausted retries on a possibly-genuine not-found
+      }
+    } catch (err) {
+      if (attempt >= retries) throw err; // exhausted retries — surface the real error
     }
-    if (attempt < retries) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    } else {
-      return attestation; // exhausted retries — return the (possibly genuine) not-found result
-    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
   throw new Error("unreachable");
 }

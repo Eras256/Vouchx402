@@ -306,6 +306,20 @@ successful run; the earlier killed attempt only shows up in
 payment was genuinely processed even though nothing was ever delivered
 for it). Phase 5's hosting blocker is resolved.
 
+## 2026-08-12 — Phase 6: demo.ts caught a real gap in the retry helper itself
+
+First full run of `scripts/demo.ts` (the Phase 6 gate — a single
+unattended script running the whole flow) failed at the dispute step: a
+bare `sepolia.base.org` 502 came back as a **thrown exception**, not a
+zeroed/not-found struct. `getAttestationWithRetry` only ever retried on
+the not-found-struct case — a thrown error skipped the retry loop
+entirely and propagated straight up. Fixed by wrapping the read in
+try/catch too, retrying either failure mode with the same backoff budget
+and only surfacing the real error once retries are exhausted. Re-ran
+`scripts/demo.ts` clean afterward: 402 → real payment → 200 with
+attestation → independently resolved via EAS → dispute filed and
+resolved → `/v1/metrics` reflecting all of it. Phase 6 gate met.
+
 ## Open questions
 
 - **Hosting decision needed before Phase 5 can actually close.** Vouch402
