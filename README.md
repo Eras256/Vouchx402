@@ -3,9 +3,29 @@
 x402-metered on-chain risk intelligence for autonomous agents on Base,
 with a built-in proof-of-fulfillment attestation layer (x402-SAP).
 
-Live: **https://vouch402.fly.dev** (Base Sepolia)
+Live: **https://vouch402.fly.dev** (Base mainnet)
 
 See [docs/TECHNICAL_SPEC.md](docs/TECHNICAL_SPEC.md) for the full spec.
+
+## Live on Base mainnet
+
+The full flow — quote, real payment, fulfillment, attestation — has run
+end-to-end against real Base mainnet, not just testnet:
+
+| | |
+|---|---|
+| Settled payment | [`0x6e44081aa3f05c73f6c9c32dc456f0231c3a690a33159765917ff096d138659c`](https://basescan.org/tx/0x6e44081aa3f05c73f6c9c32dc456f0231c3a690a33159765917ff096d138659c) |
+| Fulfillment attestation tx (Builder-Code-attributed, verified byte-for-byte) | [`0xe2b5002c923bd9b49afce698f9d0f7ebef66d24f8c1eafd22c0a64e7c5f7ebb7`](https://basescan.org/tx/0xe2b5002c923bd9b49afce698f9d0f7ebef66d24f8c1eafd22c0a64e7c5f7ebb7) |
+| `X402ServiceFulfillment` schema (mainnet) | [`0xfbd6000caf2aaa6f7e269c74b45a0f891ddfe3381356d8ebaefc46b1a524abac`](https://base.easscan.org/schema/view/0xfbd6000caf2aaa6f7e269c74b45a0f891ddfe3381356d8ebaefc46b1a524abac) |
+| `X402ServiceDispute` schema (mainnet) | [`0x1920040cef7ce73e197d5a104e1c72e21d4787c8c095e9dba0584a8fee94fa18`](https://base.easscan.org/schema/view/0x1920040cef7ce73e197d5a104e1c72e21d4787c8c095e9dba0584a8fee94fa18) |
+| USDC (Base mainnet) | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Builder Code | `bc_zt9va432`, attributed at the signer level — see `src/lib/eas.ts` |
+
+Full trace of every verification step (schemas checked with `getSchema()`
+directly, the payment tx's own receipt, the attestation independently
+resolved via EAS, the Builder Code suffix compared byte-for-byte against
+the real transaction's calldata) is in `DECISION_LOG.md` under "Phase 3
+gate — met".
 
 ## How it works
 
@@ -81,10 +101,13 @@ Sepolia ETH (gas) and USDC before `npm test` can exercise a real payment:
 
 ## Deployment
 
-Deployed on Fly.io (`fly.toml`, `Dockerfile`). The deployer keystore is
-never baked into the image — `DEPLOYER_KEYSTORE_JSON` (the encrypted
-keystore file's contents) and `DEPLOYER_KEYSTORE_PASSWORD` are Fly
-secrets, decrypted only in memory at process start (`src/lib/keystore.ts`).
+Deployed on Fly.io (`fly.toml`, `Dockerfile`), `NETWORK=base` in
+production. The deployer keystore is never baked into the image —
+`DEPLOYER_KEYSTORE_JSON` (the encrypted keystore file's contents) and
+`DEPLOYER_KEYSTORE_PASSWORD` are Fly secrets, decrypted only in memory at
+process start (`src/lib/keystore.ts`). `X402_PAY_TO_ADDRESS_MAINNET` is
+a separate address from the deployer/signer wallet on purpose — see
+`DECISION_LOG.md` "Split payTo (treasury) from the signer wallet".
 
 ```bash
 fly deploy --app vouch402
