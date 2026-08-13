@@ -4,22 +4,31 @@
   "description": "CLI for Vouch402: x402-metered on-chain risk scores for Base addresses, with EAS fulfillment attestations.",
   "type": "module",
   "bin": {
-    "vouch402": "./dist/index.js"
+    "vouch402": "dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
-  "keywords": ["x402", "base", "eas", "attestation", "risk-score", "cli"],
+  "keywords": [
+    "x402",
+    "base",
+    "eas",
+    "attestation",
+    "risk-score",
+    "cli"
+  ],
   "author": "",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Eras256/Vouchx402.git",
+    "url": "git+https://github.com/Eras256/Vouchx402.git",
     "directory": "cli"
   },
   "dependencies": {
-    "vouch402-sdk": "file:../sdk",
+    "vouch402-sdk": "^0.1.0",
     "ethers": "^6.13.2",
     "viem": "2.55.13"
   },
