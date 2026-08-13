@@ -1150,3 +1150,37 @@ Checked PR #152 independently of the above (doesn't depend on MCP):
 no reviewer comments yet, just the automated `cb-heimdall` bot's review-
 status tracking comment (`0/2` reviews, pending) and a passing
 `StepSecurity` check. Nothing actionable from a maintainer yet.
+
+## 2026-08-13: Phase 8-10 kickoff, Gate 0: package naming
+
+Checked real npm registry state before writing anything, per Gate 0.
+Every candidate name checked directly against the registry API
+(authoritative, no auth needed for a read): `@vouch402/sdk`,
+`@vouch402/cli`, `@vouch402/mcp-server`, `vouch402`, `vouch402-sdk`,
+`vouch402-cli`, `vouch402-mcp-server`, `vouch402-mcp`. All 404,
+genuinely unpublished.
+
+**Whether the `@vouch402` scope/org itself is claimed: genuinely
+unresolved, not assumed either way.** A package-level 404 doesn't prove
+the scope is free (an org can exist with zero packages published under
+it). Tried the direct checks: `npm org ls vouch402` and `npm whoami`
+both failed (an existing token in `~/.npmrc` is invalid, not something
+of mine to fix). The npmjs.com org/user pages return `403` for
+`vouch402`, but also for `vercel` (a definitely-real org) and a random
+throwaway string, confirmed by testing all three side by side. That's
+generic bot-blocking on the web frontend, not a real signal either way.
+Claiming or confirming an org is a real npm-account action; leaving it
+for the user rather than guessing.
+
+**Decision: build unscoped for now.** `vouch402-sdk`, `vouch402`
+(bare, for the CLI: `npx vouch402 score <address>` reads better than
+`npx vouch402-cli`, and the bare name is confirmed available),
+`vouch402-mcp-server`. Nothing here is published yet (the publish gate
+holds regardless), so this doesn't foreclose moving to `@vouch402/*`
+later if the user sets up the org; it just doesn't block three new
+packages on an external account action that isn't resolved yet.
+
+**Also fixed in passing**: `package.json`'s `license` field said `ISC`;
+the actual `LICENSE` file (and the README's own License section) say
+MIT. A real, pre-existing mismatch, not something to leave once found.
+Set to `MIT` to match reality.
