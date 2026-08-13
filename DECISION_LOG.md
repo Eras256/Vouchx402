@@ -1679,3 +1679,63 @@ logged. `www.vouch402.xyz` is now the canonical URL used for
 `/favicon.ico`) return `200`; zero console errors across both locales
 and all three breakpoints; dark/light and the earlier network/theme
 selector fixes all still hold with the new logo in place.
+
+## 2026-08-13: Five more real mainnet payments, and one real loss to a public-RPC outage
+
+At the user's request, ran `npx vouch402@0.1.0 score <address>` (the
+now-published CLI, against the real live mainnet API, not a
+simulation) several more times to add real volume to the Live activity
+stats. Checked the signer wallet's real balance first, not assumed
+sufficient: `0.00249 ETH` / `0.98 USDC` on Base mainnet, plenty for a
+handful of `0.01` payments.
+
+**One attempt genuinely failed and cost real money, root-caused from
+the live Fly logs, not guessed.** The second call returned a bare
+"Internal error." `fly logs --app vouch402` showed the actual cause:
+`mainnet.base.org` (the public RPC) returned `"no backend is currently
+healthy to serve traffic"` on `eth_blockNumber` *during the
+fulfillment step, after payment was already verified*, and the
+best-effort fallback error-attestation (the safety net documented in
+the Phase 2 entry above) hit the identical RPC error on its own retry
+and failed too. Confirmed via the USDC balance directly
+(`0.98 -> 0.97`, matching a real, already-verified `0.01` transfer)
+that this was a genuine payment-consumed-no-attestation incident, the
+exact risk this project's own philosophy has stated plainly since
+Phase 2 ("Payment is already consumed at that point and can't be
+un-charged; the dispute flow is the payer's recourse") actually
+happening once, live, on mainnet: not hidden here.
+
+A third attempt failed *before* broadcasting (`eth_estimateGas` hit
+the same RPC error), confirmed via balance check to have cost nothing.
+Rather than keep retrying blind into a possibly-still-unhealthy public
+RPC with real funds on the line, checked `cast block-number` against
+`mainnet.base.org` before each subsequent attempt and only proceeded
+once it answered cleanly. Five more calls completed successfully after
+that:
+
+| Payment tx | Attestation |
+|---|---|
+| `0x89ea6a2436eff31bfe3f637c150466ffbed7703ee4f3d54222e6b07ba17ca32a` | `0xb1d15d8733f0576743e78a00ecd1a883134dcdf81dd2af8e58d23f9575145919` |
+| `0xd55f5e57f7f285e462a010ba20f7377aea1a8778162cec597716a7e48303c557` | `0xa1bbd82fbd54f6611058cf8857920fc52107d9f6e8d361284f04352d8300a9b5` |
+| `0x1ac0e90a7c7b821b1d8063ba854f08eecc4033031ce81251bcdd18d12af661bc` | `0xe165f99e02e1e9179352c0bfcbd8196d8c026cc2dfeb89f3c83a699891975ce2` |
+| `0x6e8b48f4de0ea0f34783f1d9c8c43a9000fabd3cebd20ce248fb3b3d3f5b7f73` | `0x03f42f9c4dc8a656c2e70b898c1d5c9862875b9f9142bb93257092ff7f3a4118` |
+| `0x81c6ccc1724c3adf74ad5c931e40f214ba70be94deb278d0029cf1a1cfaee417` | `0x6fe500e2d582bc1a1c6a38763b7e21ae9f1fff85e42c7ce74947ba84db263fa1` |
+
+Each independently EAS-verified by the CLI itself before printing
+`Verified: yes`, not just trusted from the API response.
+
+**Final state, reconciled exactly against real on-chain balances, not
+just the metrics endpoint's own arithmetic**: signer wallet USDC
+`0.98 -> 0.92` (`0.06` spent: 5 successful `0.01` payments + the one
+lost to the RPC outage, exactly accounted for, nothing unexplained).
+`/v1/metrics?network=base`: `requestsServed`/`attestationCount` both
+`1 -> 6` (the 5 successful calls, the failed one correctly excluded
+since it never completed), `totalVolumeUsdc` `0.01 -> 0.07` (all 6
+real transfers, successful or not, since volume tracks verified
+payment, not completed fulfillment). This live incident is also a real
+argument for eventually running the resource server behind a paid RPC
+provider rather than the public endpoint, per the standing
+recommendation in the Phase-1-era "Public RPC flakiness" entry above:
+still an infra choice for later, not a code fix, but now with a real
+mainnet dollar cost attached to it rather than only a Sepolia test
+inconvenience.
