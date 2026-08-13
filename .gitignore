@@ -10,3 +10,8 @@ data/*.sqlite*
 # not Vouch402's own code, kept local only. See DECISION_LOG.md.
 .agents/
 .claude/
+
+# Local Claude Code MCP tooling config (Base MCP), not part of the
+# product itself. Doesn't hold secrets, just not something to ship in
+# this repo's history for anyone who clones it.
+.mcp.json

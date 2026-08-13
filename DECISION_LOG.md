@@ -1118,3 +1118,35 @@ reviewer instead of a developer.
 
 **PR: https://github.com/base/skills/pull/152. Status: opened, awaiting
 review.**
+
+## 2026-08-13: Base MCP still not actually connected, verified not assumed
+
+Asked to run `plugins/vouch402.md`'s `## Orchestration` flow through
+real Base MCP tools (`send_calls`, `web_request`) against the live
+instance, the same live-execution standard as the Phase 0-6
+re-verification. Checked whether the tools were actually available
+before attempting anything, rather than trusting that writing
+`.mcp.json` earlier meant the connection was live: searched this
+session's own tool set for `get_wallets`/`send_calls`/`web_request`
+and anything wallet-related. Nothing found. No Base MCP tools exist in
+this session.
+
+Root cause, not guessed: Claude Code loads MCP server config at session
+start, not live mid-session. `.mcp.json` was written while this exact
+session was already running, so it was never picked up. The OAuth
+authorization step (a real browser sign-in) also hasn't happened; that
+can only be completed by a human, not from inside this session either
+way.
+
+**Not run**: the real-tool orchestration test, and therefore no new
+transaction/attestation from it. Nothing in `plugins/vouch402.md` was
+touched this entry; there was nothing to compare against real behavior
+yet. This needs a fresh Claude Code session in this project (so
+`.mcp.json` loads) plus one manual OAuth authorization
+(`/mcp` -> `base-mcp` -> Authenticate) before the live-tool test can
+actually run.
+
+Checked PR #152 independently of the above (doesn't depend on MCP):
+no reviewer comments yet, just the automated `cb-heimdall` bot's review-
+status tracking comment (`0/2` reviews, pending) and a passing
+`StepSecurity` check. Nothing actionable from a maintainer yet.
