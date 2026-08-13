@@ -97,8 +97,8 @@ The `DEPLOYER_KEYSTORE_ACCOUNT` / `X402_PAY_TO_ADDRESS` wallet needs Base
 Sepolia ETH (gas) and USDC before `npm test` can exercise a real payment:
 
 1. Get the address: `cast wallet address --account <DEPLOYER_KEYSTORE_ACCOUNT from .env>`
-2. Claim ETH: [CDP Faucet](https://portal.cdp.coinbase.com/products/faucet) → Base Sepolia → ETH
-3. Claim USDC: [Circle Faucet](https://faucet.circle.com/) → Base Sepolia → USDC
+2. Claim ETH: [CDP Faucet](https://portal.cdp.coinbase.com/products/faucet) -> Base Sepolia -> ETH
+3. Claim USDC: [Circle Faucet](https://faucet.circle.com/) -> Base Sepolia -> USDC
 4. Verify: `cast balance <address> --rpc-url https://sepolia.base.org`
 
 ## Deployment

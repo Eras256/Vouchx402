@@ -162,8 +162,8 @@ not offer custody, exchange, or transfer of virtual assets to its users.
 ## Testing
 
 Integration tests exercise the full flow against Base Sepolia: unpaid
-request → `402` → real testnet USDC payment → retried request → `200` with
-score + attestation UID → attestation independently resolvable via EAS.
+request -> `402` -> real testnet USDC payment -> retried request -> `200` with
+score + attestation UID -> attestation independently resolvable via EAS.
 Disputes are tested by filing one against a known fulfillment attestation
 and confirming the `refUID` link resolves correctly.
 
