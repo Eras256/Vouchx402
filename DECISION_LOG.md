@@ -1457,3 +1457,90 @@ actually claimed. All three currently ship unscoped
 (`vouch402-sdk`/`vouch402`/`vouch402-mcp-server`); moving to
 `@vouch402/*` later, if the user sets up the org, would be a rename at
 publish time, not a rebuild.
+
+## 2026-08-13: Published, `vouch402-sdk`/`vouch402`/`vouch402-mcp-server` all live
+
+The user explicitly confirmed proceeding with real `npm publish` for
+all three, unscoped, no `@vouch402` org for now ("cero adopción real
+todavía que justifique protegerla con un scope"). `npm whoami`/`npm
+org ls` in this session were still `401` on an invalid local token
+(same finding as Gate 0); the user generated a fresh token and ran
+`npm login`, which also hit npm's newer account-security policy
+("tokens that bypass 2FA are being restricted... direct publishing").
+Actual `npm publish` for each package required an interactive
+browser-based OTP approval (`EOTP`, a URL to open, not a code this
+session could complete), so the user ran the three `npm publish`
+commands themselves, in their own terminal, approving each in browser.
+Pushed the 5 local Phase 8-10 commits to `origin/master` first (was 5
+ahead, 0 behind; confirmed by `git fetch` + diffing against
+`origin/master` before and after `git push`, not assumed from the push
+command's own exit code alone).
+
+**Caught a real bug before any of it published, not after**: `npm
+publish --dry-run` for `vouch402` (CLI) and `vouch402-mcp-server`
+warned `"bin[...]" script name dist/index.js was invalid and removed`.
+Both `package.json`s had `"./dist/index.js"` in their `bin` field; npm
+silently drops a `bin` entry with a `./`-prefixed path rather than
+erroring loudly, meaning either package would have published as a
+normal, valid-looking tarball with **no working `vouch402`/
+`vouch402-mcp-server` command at all**, a defect nobody would notice
+until someone actually tried to run it, and unfixable except by a new
+version (npm never allows overwriting a published version). Confirmed
+the actual fix via `npm pkg fix` (removes the `./` prefix) and a clean
+re-run of `--dry-run` with zero warnings before either package
+published for real. `vouch402-sdk` has no `bin` field, so it was never
+exposed to this.
+
+Each package's dependency on `vouch402-sdk` was moved from
+`file:../sdk` to `^0.1.0` and verified against the real registry, not
+assumed correct because the version number looked right: fresh
+`npm install` in both `cli/` and `mcp-server/` (after deleting
+`node_modules`/`package-lock.json` to force real resolution), and
+`node_modules/.package-lock.json` for both showed
+`"resolved": "https://registry.npmjs.org/vouch402-sdk/-/vouch402-sdk-0.1.0.tgz"`,
+a real registry URL, not a local path. Ran the full functional flow
+against local Base Sepolia with this registry-resolved SDK before
+publishing either dependent package: the CLI (real payment
+`0xd4903a66a7c959d6198b1cbcc88e59ac905e017974c5dce21273c726059e13c8`,
+score 70, independently-verified attestation
+`0xe974ce3790f836301fd1994cc00e55f4f6a8be9ec0d2eb5896cc183b86d6a17b`)
+and the MCP server (`npm test`, real MCP client over stdio, 2/2 passed
+again against the registry-resolved dependency).
+
+**Independently verified all three against the live registry after
+publishing**, not just trusted the pasted terminal output:
+
+| Package | Version | Link |
+|---|---|---|
+| `vouch402-sdk` | `0.1.0` | https://www.npmjs.com/package/vouch402-sdk |
+| `vouch402` | `0.1.0` | https://www.npmjs.com/package/vouch402 |
+| `vouch402-mcp-server` | `0.1.0` | https://www.npmjs.com/package/vouch402-mcp-server |
+
+`npm view <name> version`/`dist-tags` returned `0.1.0`/`{latest:
+"0.1.0"}` for all three directly from `registry.npmjs.org` (the
+authoritative source; the npmjs.com website frontend itself still
+generically bot-blocks unauthenticated `curl`, the same false-negative
+already documented at Gate 0, not treated as evidence of anything).
+`npm view vouch402 bin` / `npm view vouch402-mcp-server bin` confirmed
+the `bin` fix actually shipped correctly this time
+(`{"vouch402":"dist/index.js"}` / `{"vouch402-mcp-server":"dist/index.js"}`).
+
+**Then ran the literal Phase 9 gate wording for real**, against the
+actual published package rather than a local tarball: from an
+unrelated scratch directory, `npx --yes vouch402@0.1.0 score
+0x53a79B109fa77c05B043e73A284a22b57c6263b0 --base-url
+http://127.0.0.1:3402` (local Base Sepolia server) completed with exit
+code `0`: real payment
+(`0x606c22e17cef9a80640e74f0d53e0a0a04261c5036f564c39aafe3c5ac89e3d1`),
+score `70`, attestation
+`0x83763de46b44ea441861bffd4eec2db183184ea1f7233ae3a4480a35d799c43c`
+independently verified. This is the first time `npx <published-name>`
+itself (as opposed to `npm install` of a local tarball) was tested;
+the flakiness noted at the Phase 9 gate entry above was specific to
+`npx` against a local `file:` tarball path, not present against the
+real registry.
+
+All three packages are live, correct, and real-verified end to end.
+Committed and pushed the `bin`-path fix and the `file:../sdk` ->
+`^0.1.0` dependency updates (`c2baec9`) before any of the three
+publishes ran for real.
