@@ -1611,3 +1611,71 @@ warning noted while reproducing the original bugs is the same one
 already investigated and dismissed as a Turbopack dev-cache artifact
 in the Phase 7b entry above: confirmed still true, zero console errors
 on the production build.
+
+## 2026-08-13: Real logo, favicon set, OG image, and a real metadata bug it surfaced
+
+Replaced the placeholder mark (a plain rounded square with a hand-drawn
+checkmark path) with Lucide's own `shield-check` icon geometry
+(`node_modules/lucide-react/dist/esm/icons/shield-check.mjs`, MIT/ISC,
+already a dependency): the shield outline filled solid in Base blue as
+the badge, the checkmark stroked white on top, unchanged proportions
+from Lucide's own already-matched pair rather than hand-drawn bezier
+curves. Reads as "verified/attested," which is literally the product
+(the current mark was a generic checkmark; this one is closer to what
+an attestation service should look like). Updated `logo.tsx`
+(navbar), and used the identical mark for the full icon set: `icon.svg`
+(Next.js's SVG favicon convention), `apple-icon.png` (180x180, white
+backdrop since the shield needs contrast, not another blue behind it,
+generated via `sharp`, already a dependency via Next's own image
+pipeline), and a hand-built `favicon.ico` (16/32/48px PNG frames in a
+real, standard PNG-in-ICO container, not a hack, verified by parsing
+the file's own ICONDIR header back out and checking each frame's PNG
+signature before shipping it). Also generated a static `opengraph-image.png`
+(1200x630, dark brand background sampled from an actual rendered
+screenshot rather than converted from the OKLCH tokens by hand) for
+social share cards, since there wasn't one before.
+
+**Wiring the OG image up surfaced a real, separate bug, not assumed
+fixed just because the build succeeded.** `next build` warned
+`metadataBase property in metadata export is not set`. Checked what
+this actually broke rather than trusting a one-line fix: curled the
+real rendered `/en` page and found `og:image`/`twitter:image` meta
+tags were missing entirely, not just wrong. Root cause: the static
+`opengraph-image.png`/`apple-icon.png`/`icon.svg` file-convention
+routes live at `src/app/` (the true root), while all of this app's
+actual metadata lives in `src/app/[locale]/layout.tsx`, a *sibling*
+route segment, not an ancestor of the icon routes, since this project
+has no root `app/layout.tsx` at all (next-intl's always-prefixed
+routing means there's no unprefixed root page for one to belong to;
+`[locale]/layout.tsx` carries the `<html>`/`<body>` tags itself).
+Metadata inheritance in Next.js follows the layout tree, so
+`metadataBase` set in `[locale]/layout.tsx` cannot flow to a route
+outside it. Fixed without the larger, riskier refactor (moving
+`<html>`/`<body>` into a new true root layout, touched by every route
+in the app): set `metadataBase` for the URL-resolution behavior that
+does apply within `[locale]/layout.tsx` itself, and explicitly listed
+`images: ["/opengraph-image.png"]` in both `openGraph` and `twitter`
+metadata instead of relying on cross-segment file-convention
+auto-detection. Re-verified against the real rendered page, not the
+build log alone: `og:image`/`twitter:image` now both correctly read
+`https://www.vouch402.xyz/opengraph-image.png`. The `next build`
+warning itself still fires (it's about the standalone icon routes'
+own metadata resolution, which nothing user-facing actually depends
+on), left as a known, harmless cosmetic warning rather than chasing it
+into a structural layout refactor with real regression risk for a
+build-time-only message.
+
+**Also found while picking a `metadataBase` value**: `vouch402.xyz` is
+live and correctly connected (`https://vouch402.xyz` -> 308 ->
+`https://www.vouch402.xyz` -> 307 -> `/en` -> 200, confirmed via a
+real request, not assumed), not still pending as the last Vercel entry
+above described ("telling the user to add the domain once they're
+ready"). This must have happened since that entry without getting
+logged. `www.vouch402.xyz` is now the canonical URL used for
+`metadataBase`.
+
+**Verified against a clean production build**: all four new routes
+(`/icon.svg`, `/apple-icon.png`, `/opengraph-image.png`,
+`/favicon.ico`) return `200`; zero console errors across both locales
+and all three breakpoints; dark/light and the earlier network/theme
+selector fixes all still hold with the new logo in place.
