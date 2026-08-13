@@ -1184,3 +1184,38 @@ packages on an external account action that isn't resolved yet.
 the actual `LICENSE` file (and the README's own License section) say
 MIT. A real, pre-existing mismatch, not something to leave once found.
 Set to `MIT` to match reality.
+
+## 2026-08-13: Phase 8 gate met, vouch402-sdk
+
+Built `sdk/` as a thin ESM client wrapping the same quote/pay/fetch/
+verify flow already proven in `scripts/demo.ts`, `test/server.test.ts`,
+and `src/lib/eas.ts`. No product logic reimplemented: `pay()` derives
+network/chain from the quote's own `network` field (never assumed),
+`fetchScore()` retries on 402 specifically (max 5 attempts, 2s delay),
+`verifyAttestation()` is a genuinely read-only EAS resolution (plain
+ethers `JsonRpcProvider`, no signer) with the same retry shape as the
+server's own `getAttestationWithRetry` (3 retries, 1500ms delay,
+checks against `ZERO_ADDRESS`). `getRiskScore()` composes all four,
+matching `scripts/demo.ts`'s manual flow.
+
+**Gate run for real, not assumed**: `sdk/test/sdk.test.ts` spins up a
+local instance of the actual server (`createApp()` from the repo
+root, not a mock) configured via the local `.env`'s
+`NETWORK=base-sepolia`, with a runtime guard that throws if the env
+isn't actually Sepolia. Deliberately does not point at the live
+`vouch402.fly.dev` instance: that deployment is mainnet-only
+post-cutover (see Phase 3 gate), so hitting it here would issue a
+real mainnet quote inside a test, not the testnet payment the gate
+asks for. `npx vitest run`: 4/4 passed, including a real testnet USDC
+transfer, a real fulfillment attestation, and independent EAS
+verification of that attestation (not just trusting the API's own
+response), plus a replay-rejection check on an already-consumed
+payment proof. `npm pack --dry-run`: valid 6.2 kB tarball, 13 files,
+`dist/` and `package.json` only, no source or test artifacts.
+
+**Not run**: the real `npm publish`. Per the standing publish gate,
+stopping here and flagging `vouch402-sdk` as publish-ready pending
+the user's explicit go-ahead.
+
+Next: Phase 9 (CLI), depending on this package rather than
+reimplementing any of its logic.
