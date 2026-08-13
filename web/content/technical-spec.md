@@ -1,4 +1,4 @@
-# Vouch402 — Technical Specification
+# Vouch402: Technical Specification
 
 x402-metered on-chain risk intelligence for autonomous agents on Base, with
 a built-in proof-of-fulfillment attestation layer.
@@ -6,8 +6,8 @@ a built-in proof-of-fulfillment attestation layer.
 ## Problem
 
 x402 (HTTP 402-based payments for machine-to-machine commerce) defines how
-an agent pays for a resource. It does not define how anyone — the payer, the
-seller, or a third party — can later verify whether the paid resource was
+an agent pays for a resource. It does not define how anyone (the payer, the
+seller, or a third party) can later verify whether the paid resource was
 actually delivered. Once a payment settles, there is no portable, queryable
 record connecting that payment to a fulfillment outcome. This makes it hard
 to build reputation, credit, or dispute-resolution systems for agent-to-agent
@@ -15,8 +15,8 @@ commerce on top of x402 today, because there is no fulfillment data to build
 them from.
 
 Vouch402 addresses one instance of this problem directly (it is itself an
-x402-paid data service), and ships a small, reusable protocol layer —
-**x402-SAP (Service Attestation Protocol)** — that any x402 resource server
+x402-paid data service), and ships a small, reusable protocol layer,
+**x402-SAP (Service Attestation Protocol)**, that any x402 resource server
 could adopt to close this gap generally.
 
 ## Architecture overview
@@ -73,7 +73,7 @@ A retried request with valid payment proof returns:
 
 `score` is derived from public on-chain signals (wallet age, transaction
 count, unique contract-interaction diversity, and membership on a bundled,
-versioned flag list). This is a v0 heuristic — documented as such, not
+versioned flag list). This is a v0 heuristic, documented as such, not
 presented as a complete risk model. `attestationUid` points to the
 `X402ServiceFulfillment` record created for this specific response (see
 below), letting any party independently verify what was returned via its
@@ -108,7 +108,7 @@ Every paid request is verified server-side before the resource is released:
 
 Frontend-reported payment confirmation is never trusted on its own.
 
-## x402-SAP — attestation schemas (EAS, deployed on Base)
+## x402-SAP: attestation schemas (EAS, deployed on Base)
 
 ### `X402ServiceFulfillment`
 
@@ -124,7 +124,7 @@ uint64  fulfilledAt
 
 Emitted automatically by the resource server immediately after a successful
 (or failed) fulfillment of a paid request. Attestations are immutable by
-design (EAS), so outcomes are never edited after the fact — a disagreement
+design (EAS), so outcomes are never edited after the fact: a disagreement
 is expressed as a separate, linked attestation instead (below).
 
 ### `X402ServiceDispute`
@@ -144,7 +144,7 @@ explicitly-scoped starting point: it establishes the data format and
 produces a real, queryable fulfillment history, while decentralized or
 neutral-party verification (e.g. staking/slashing, multi-attester
 consensus) is left as a deliberately separate, future layer built on top of
-this data — not solved by this specification.
+this data, not solved by this specification.
 
 ## Builder Code attribution
 
@@ -169,8 +169,8 @@ and confirming the `refUID` link resolves correctly.
 
 ## Roadmap (technical)
 
-The attestation data this service produces — a growing, queryable graph of
-`(payer, payee, outcome, dispute)` records — is designed to be consumable
+The attestation data this service produces, a growing, queryable graph of
+`(payer, payee, outcome, dispute)` records, is designed to be consumable
 by future systems that need agent reputation or dispute-resolution
 signals, without requiring those systems to re-instrument every individual
 x402 resource server themselves.

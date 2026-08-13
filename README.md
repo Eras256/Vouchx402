@@ -41,7 +41,7 @@ GET /v1/risk-score/:address           -> 200 + score, signals, attestationUid
 Every successful (or failed-after-payment) fulfillment is recorded as an
 `X402ServiceFulfillment` attestation on EAS: independently resolvable by
 anyone, without trusting Vouch402's own word for what it returned. See
-[x402-SAP](docs/TECHNICAL_SPEC.md#x402-sap--attestation-schemas-eas-deployed-on-base).
+[x402-SAP](docs/TECHNICAL_SPEC.md#x402-sap-attestation-schemas-eas-deployed-on-base).
 
 ## Try it
 
