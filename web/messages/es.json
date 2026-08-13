@@ -34,7 +34,7 @@
   },
   "howItWorks": {
     "title": "Cómo funciona",
-    "subtitle": "Cada solicitud pagada sigue el mismo camino verificable — ningún paso está oculto ni se da por hecho.",
+    "subtitle": "Cada solicitud pagada sigue el mismo camino verificable: ningún paso está oculto ni se da por hecho.",
     "steps": {
       "quote": {
         "title": "Solicitar una cotización",
@@ -42,19 +42,19 @@
       },
       "pay": {
         "title": "Pagar on-chain",
-        "description": "Envía el monto de USDC cotizado directamente a la dirección payTo. Una transferencia ERC-20 estándar y real — sin facilitador, sin ningún paso off-chain que haya que confiar a ciegas."
+        "description": "Envía el monto de USDC cotizado directamente a la dirección payTo. Una transferencia ERC-20 estándar y real: sin facilitador, sin ningún paso off-chain que haya que confiar a ciegas."
       },
       "fulfill": {
         "title": "Obtener el score",
-        "description": "Reintenta con el hash de la transacción como prueba. El servidor verifica el pago on-chain — monto, destinatario, remitente, que no se haya usado antes — antes de entregar nada."
+        "description": "Reintenta con el hash de la transacción como prueba. El servidor verifica el pago on-chain (monto, destinatario, remitente, que no se haya usado antes) antes de entregar nada."
       },
       "attest": {
         "title": "El cumplimiento se atestigua",
-        "description": "Se crea automáticamente una attestation en EAS que registra exactamente lo que se devolvió, y su UID llega en la respuesta — verificable de forma independiente, sin confiar en esta página."
+        "description": "Se crea automáticamente una attestation en EAS que registra exactamente lo que se devolvió, y su UID llega en la respuesta: verificable de forma independiente, sin confiar en esta página."
       },
       "dispute": {
         "title": "Disputar si algo está mal",
-        "description": "POST /v1/disputes contra la attestation, firmado por el pagador original. Se registra on-chain, vinculado al cumplimiento que disputa — un registro público y permanente en cualquier caso."
+        "description": "POST /v1/disputes contra la attestation, firmado por el pagador original. Se registra on-chain, vinculado al cumplimiento que disputa: un registro público y permanente en cualquier caso."
       }
     }
   },
@@ -82,13 +82,13 @@
   "docs": {
     "title": "Documentación",
     "tableOfContents": "En esta página",
-    "sourceNote": "Esta página renderiza docs/TECHNICAL_SPEC.md directamente desde el repositorio — contenido de referencia técnica, que se mantiene en inglés sin importar el idioma del sitio, siguiendo la convención estándar de documentación para desarrolladores."
+    "sourceNote": "Esta página renderiza docs/TECHNICAL_SPEC.md directamente desde el repositorio: contenido de referencia técnica, que se mantiene en inglés sin importar el idioma del sitio, siguiendo la convención estándar de documentación para desarrolladores."
   },
   "liveStats": {
     "title": "Actividad en vivo",
-    "subtitle": "Contadores reales del despliegue en vivo — no estimados, no una maqueta.",
+    "subtitle": "Contadores reales del despliegue en vivo: no estimados, no una maqueta.",
     "mainnetBadge": "Base mainnet",
-    "mainnetNote": "Siempre se muestra para mainnet, sin importar el selector de red de arriba — la actividad en testnet es ruido de desarrollo, no una señal de uso real.",
+    "mainnetNote": "Siempre se muestra para mainnet, sin importar el selector de red de arriba: la actividad en testnet es ruido de desarrollo, no una señal de uso real.",
     "loadError": "No se pudieron cargar las estadísticas en vivo desde la API en este momento.",
     "stats": {
       "uniquePayers": "Pagadores únicos",
@@ -100,16 +100,16 @@
   },
   "tryIt": {
     "title": "Pruébalo",
-    "subtitle": "Un pago x402 real, aquí mismo — sin teatro de dinero ficticio en testnet, una transferencia real de USDC on-chain verificada por la API en vivo.",
+    "subtitle": "Un pago x402 real, aquí mismo: sin teatro de dinero ficticio en testnet, una transferencia real de USDC on-chain verificada por la API en vivo.",
     "addressLabel": "Dirección de Base a evaluar",
-    "addressPlaceholder": "0x…",
+    "addressPlaceholder": "0x...",
     "addressInvalid": "Ingresa una dirección de Base válida con prefijo 0x.",
-    "networkNote": "Se ejecuta en {network} — cambia de red en la barra de navegación de arriba. Testnet es la opción segura por defecto: no involucra fondos reales.",
+    "networkNote": "Se ejecuta en {network}. Cambia de red en la barra de navegación de arriba. Testnet es la opción segura por defecto: no involucra fondos reales.",
     "phase": {
-      "quoting": "Solicitando una cotización…",
-      "awaitingPayment": "Aprueba {amount} USDC a {payTo} en tu wallet…",
-      "confirming": "Confirmando el pago on-chain…",
-      "fulfilling": "Pago confirmado — obteniendo el score de riesgo…",
+      "quoting": "Solicitando una cotización...",
+      "awaitingPayment": "Aprueba {amount} USDC a {payTo} en tu wallet...",
+      "confirming": "Confirmando el pago on-chain...",
+      "fulfilling": "Pago confirmado: obteniendo el score de riesgo...",
       "error": "Algo salió mal",
       "tryAgain": "Intentar de nuevo"
     },
