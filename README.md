@@ -9,6 +9,16 @@ See [docs/TECHNICAL_SPEC.md](docs/TECHNICAL_SPEC.md) for the full spec.
 Also available as a Base MCP plugin (or will be, once the upstream
 `base/skills` PR lands): see [`plugins/vouch402.md`](plugins/vouch402.md).
 
+## Client packages
+
+Three thin wrappers over this same API, none published to npm yet
+(see `DECISION_LOG.md` for status):
+
+- [`sdk/`](sdk): `vouch402-sdk`, a TypeScript client library.
+- [`cli/`](cli): `vouch402`, `vouch402 score <address>` from a terminal.
+- [`mcp-server/`](mcp-server): `vouch402-mcp-server`, a standalone MCP
+  server. Never holds a wallet; see its README for why.
+
 ## Live on Base mainnet
 
 The full flow (quote, real payment, fulfillment, attestation) has run

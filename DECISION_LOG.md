@@ -1434,4 +1434,26 @@ user's go-ahead, same as the other two packages.
 
 All three Phase 8-10 packages (`vouch402-sdk`, `vouch402`,
 `vouch402-mcp-server`) are now built, real-verified against Base
-Sepolia, and pack cleanly. None published.
+Sepolia, and pack cleanly. None published. Added a short "Client
+packages" section to the root README pointing at all three, matching
+how it already links to `plugins/vouch402.md`.
+
+## 2026-08-13: Phase 8-10 publish readiness
+
+Per the standing publish gate, restating status plainly in one place
+rather than leaving it scattered across three separate entries above:
+
+| Package | Gate | Publish |
+|---|---|---|
+| `vouch402-sdk` | Met: 4/4 real Base Sepolia tests, valid tarball | Not run |
+| `vouch402` (CLI) | Met: real fresh-install test, real payment | Not run |
+| `vouch402-mcp-server` | Met: real MCP client, real payment, non-custodial | Not run |
+
+All three are `npm pack`-clean and ready. None have had `npm publish`
+run against them; that stays gated on the user's explicit go-ahead, the
+same standard already applied to opening the `base/skills` PR. Also
+still unresolved from Gate 0: whether the `@vouch402` npm scope is
+actually claimed. All three currently ship unscoped
+(`vouch402-sdk`/`vouch402`/`vouch402-mcp-server`); moving to
+`@vouch402/*` later, if the user sets up the org, would be a rename at
+publish time, not a rebuild.
