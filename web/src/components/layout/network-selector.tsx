@@ -34,7 +34,7 @@ export function NetworkSelector({ compact = false }: { compact?: boolean }) {
         {options.map((opt) => (
           <DropdownMenuItem
             key={opt.value}
-            onSelect={() => setNetwork(opt.value)}
+            onClick={() => setNetwork(opt.value)}
             aria-current={opt.value === network ? "true" : undefined}
           >
             {opt.label}

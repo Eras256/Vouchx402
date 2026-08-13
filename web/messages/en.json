@@ -18,6 +18,12 @@
     "dark": "Dark",
     "system": "System"
   },
+  "mainnetWarning": {
+    "title": "Switching to Base mainnet",
+    "description": "The Try It demo will use real Base mainnet USDC for its next payment, not testnet play-money. Only continue if you mean to pay with real funds.",
+    "confirm": "Switch to mainnet",
+    "cancel": "Stay on testnet"
+  },
   "footer": {
     "tagline": "x402-metered on-chain risk intelligence for autonomous agents on Base.",
     "github": "GitHub",

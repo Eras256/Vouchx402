@@ -1544,3 +1544,70 @@ All three packages are live, correct, and real-verified end to end.
 Committed and pushed the `bin`-path fix and the `file:../sdk` ->
 `^0.1.0` dependency updates (`c2baec9`) before any of the three
 publishes ran for real.
+
+## 2026-08-13: Frontend: real bug in every dropdown selector, plus a mainnet payment warning
+
+User-reported: the network selector (navbar, desktop) doesn't switch
+from Testnet to Mainnet at all, and the theme selector's Light option
+doesn't work on desktop (only mobile). Reproduced both live with
+Playwright before touching any code, not guessed from reading the
+component source alone.
+
+**Root cause, one bug behind both reports**: `network-selector.tsx`
+and `theme-selector.tsx` both pass `onSelect={...}` to
+`DropdownMenuItem`. Checked the actual installed `@base-ui/react@1.7.0`
+type definitions (`menu/item/MenuItem.d.ts`) directly rather than
+assuming: `Menu.Item` has no `onSelect` prop at all, only `onClick`.
+`onSelect` is a real Radix Primitives convention (this project's
+shadcn setup is built on Base UI, not Radix, per the Phase 7a entry
+above), so it silently became an inert, unused prop: React accepts it
+without warning (it's a technically-valid native event-handler prop
+name), Base UI's own `closeOnClick` still closes the menu on click
+(masking the bug, since the interaction visibly "does something"), but
+the intended `setNetwork`/`setTheme` call never fires. Confirmed by
+reproduction: clicking Mainnet closed the menu but left
+`localStorage`/the trigger label on Testnet; clicking Light while the
+OS/system theme was dark left `<html>` with `class="...dark"` and
+`localStorage.theme` unset. Explains "works on mobile": `mobile-menu.tsx`
+has its own separate, correctly-wired `onClick`-based buttons, not the
+shared dropdown component, so it was never exposed to this bug at all.
+Fixed by changing `onSelect` to `onClick` in both files; re-verified
+live afterward that `localStorage`/the visible state actually update
+this time, not just that the code looks right.
+
+**Mainnet payment warning, per the user's explicit request**: switching
+the network selector to Mainnet changes what the Try It demo (7d) pays
+with on the next click, real funds, no confirmation step existed
+before. Centralized the interception in `NetworkProvider` itself
+(`requestNetworkChange`) rather than duplicating a dialog in both the
+desktop selector and the mobile menu: any caller of `setNetwork("mainnet")`
+now gets a confirmation dialog for free, switching *to* testnet stays
+instant (no real funds involved, no reason to interrupt it). Built
+`ui/alert-dialog.tsx` (new: no dialog primitive existed in this repo
+yet) on Base UI's `AlertDialog` parts, read directly from
+`node_modules/@base-ui/react/alert-dialog` rather than guessed from
+Radix/shadcn convention, given the `onSelect` lesson above. Verified
+live: dialog appears on Mainnet (desktop dropdown and mobile menu
+both, since both go through the same provider), Cancel leaves
+`localStorage` untouched, Confirm sets it, switching back to Testnet
+shows no dialog, correct in both English and Spanish.
+
+**Frontend updated with the new client packages**: added a "Client
+packages" section to `docs/TECHNICAL_SPEC.md` (single source of truth,
+already synced into the Docs page via `sync-docs.mjs`) listing
+`vouch402-sdk`/`vouch402`/`vouch402-mcp-server` with links to their
+live npm pages. Not added to the homepage marketing sections: checked
+first, and the Phase 5 Base MCP plugin isn't given homepage treatment
+either, only documented in the Docs page and the README, so this
+matches existing precedent rather than introducing a new one.
+
+**Verified against a clean production build** (`next build` + `next
+start`, not `next dev`), matching the Phase 7 standard: zero console
+errors across both locales and all three breakpoints (375/768/1440),
+dark/light toggling correct at every one, the mainnet dialog flow
+works in production too, and the new Docs section renders with a
+working, scrolling TOC entry. The persistent dev-mode hydration
+warning noted while reproducing the original bugs is the same one
+already investigated and dismissed as a Turbopack dev-cache artifact
+in the Phase 7b entry above: confirmed still true, zero console errors
+on the production build.

@@ -95,6 +95,28 @@ requests served, total volume (USDC), attestation count, dispute count.
 referenced fulfillment attestation (verified via signature, not a claimed
 address). Files an `X402ServiceDispute` attestation linked to the original.
 
+## Client packages
+
+Three thin wrappers over the same API above, none reimplementing its
+logic:
+
+- **[`vouch402-sdk`](https://www.npmjs.com/package/vouch402-sdk)**: a
+  TypeScript client library (`getQuote`, `pay`, `fetchScore`,
+  `verifyAttestation`, and a composed `getRiskScore`). The CLI and the
+  MCP server both depend on it rather than duplicating its payment-flow
+  code.
+- **[`vouch402`](https://www.npmjs.com/package/vouch402)**: a CLI,
+  `npx vouch402 score <address>`, for checking a single address from a
+  terminal. Pays with a locally-held Foundry keystore, never a raw
+  private key.
+- **[`vouch402-mcp-server`](https://www.npmjs.com/package/vouch402-mcp-server)**:
+  a standalone [MCP](https://modelcontextprotocol.io) server. Never
+  holds a wallet or signs a transaction itself: one tool returns an
+  unsigned payment quote, a second tool takes the resulting transaction
+  hash from whatever wallet tooling the calling agent already has and
+  completes the flow, matching this spec's "Non-custodial by
+  construction" section below.
+
 ## Payment verification (server-side, mandatory)
 
 Every paid request is verified server-side before the resource is released:

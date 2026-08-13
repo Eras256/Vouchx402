@@ -18,6 +18,12 @@
     "dark": "Oscuro",
     "system": "Sistema"
   },
+  "mainnetWarning": {
+    "title": "Cambiando a Base mainnet",
+    "description": "La demo Try It usará USDC real de Base mainnet en su próximo pago, no dinero de prueba de testnet. Continúa solo si quieres pagar con fondos reales.",
+    "confirm": "Cambiar a mainnet",
+    "cancel": "Quedarme en testnet"
+  },
   "footer": {
     "tagline": "Inteligencia de riesgo on-chain para agentes autónomos en Base, medida con x402.",
     "github": "GitHub",

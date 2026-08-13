@@ -45,7 +45,7 @@ export function ThemeSelector({ compact = false }: { compact?: boolean }) {
           return (
             <DropdownMenuItem
               key={opt.value}
-              onSelect={() => setTheme(opt.value)}
+              onClick={() => setTheme(opt.value)}
               aria-current={opt.value === theme ? "true" : undefined}
               className="gap-2"
             >

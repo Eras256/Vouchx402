@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from "react";
+import { MainnetConfirmDialog } from "@/components/mainnet-confirm-dialog";
 
 export type Network = "testnet" | "mainnet";
 
@@ -60,9 +61,29 @@ const NetworkContext = createContext<NetworkContextValue | undefined>(undefined)
  */
 export function NetworkProvider({ children }: { children: ReactNode }) {
   const network = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // Switching *to* mainnet means the Try It demo (checkpoint 7d) will
+  // spend real funds on the next payment. Intercepted here, once, so
+  // every caller of setNetwork (the desktop selector, the mobile menu)
+  // gets the confirmation for free without duplicating it per caller.
+  const [pendingMainnet, setPendingMainnet] = useState(false);
+
+  function requestNetworkChange(next: Network) {
+    if (next === "mainnet" && network !== "mainnet") {
+      setPendingMainnet(true);
+      return;
+    }
+    setStoredNetwork(next);
+  }
 
   return (
-    <NetworkContext.Provider value={{ network, setNetwork: setStoredNetwork }}>{children}</NetworkContext.Provider>
+    <NetworkContext.Provider value={{ network, setNetwork: requestNetworkChange }}>
+      {children}
+      <MainnetConfirmDialog
+        open={pendingMainnet}
+        onOpenChange={setPendingMainnet}
+        onConfirm={() => setStoredNetwork("mainnet")}
+      />
+    </NetworkContext.Provider>
   );
 }
 
