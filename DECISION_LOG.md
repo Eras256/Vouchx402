@@ -1308,3 +1308,130 @@ Next: Phase 10 (standalone MCP server). Per the user's explicit
 instruction, the key-management design there is a real judgment call
 to surface as an "Open questions" entry before building, not decide
 unilaterally.
+
+## 2026-08-13: Phase 10 open question: how should the standalone MCP server pay?
+
+Per the user's explicit instruction, checked how this ecosystem's own
+documentation handles it before proposing anything, rather than
+guessing: read `.agents/skills/base-mcp/` (README, plugin-spec,
+every existing plugin file) and `.agents/skills/build-on-base/`
+(the local vendored reference copies, still present on disk though
+gitignored, see the Phase 5/pre-push entries above) specifically for
+how a standalone server without a caller-side wallet session handles
+signing.
+
+**Base MCP's own docs are explicit and repeated: the server itself
+never signs.** `README.md`: "The MCP server itself does not sign or
+broadcast transactions." Every existing plugin (Morpho, Brickken,
+Venice, GMGN, Virtuals, Bitrefill) builds unsigned calldata/quotes and
+routes execution through Base MCP's own `send_calls`/x402 tools or a
+named third-party relayer, never a key the plugin itself holds.
+`plugins/venice.md` states it as a rule, not just a description: "Do
+not ask for or use a private key." This is the same pattern
+`plugins/vouch402.md` (the Phase 5 PR) already follows.
+
+**`build-on-base/` does document genuine autonomous local signing**,
+for the case where a server genuinely has no caller session to lean
+on, but even there the preferred pattern isn't a raw key: a
+CDP-managed smart wallet (`CDP_API_KEY_ID`/`CDP_API_KEY_SECRET`/
+`CDP_WALLET_SECRET`, `getOrCreateSubscriptionOwnerWallet` from
+`@base-org/account`'s subscriptions API) that handles gas, nonce, and
+signing itself, with a `PRIVATE_KEY` env var only shown for simple,
+throwaway scripts, and flagged elsewhere in the same corpus as
+something to guard against, not the recommended path
+("Never commit private keys, use `cast wallet import`").
+
+**No example anywhere in either reference set of a standalone MCP
+server holding its own signing authority for a payment.** This
+confirms there's no established "just do X" answer to copy; a real
+design decision either way.
+
+**Proposal, not yet built**: option (b) from the original spec, the
+caller-non-custodial design, for the same reason `plugins/vouch402.md`
+already uses it and the base-mcp corpus argues for it directly: this
+server's job is orchestrating a quote and independently verifying the
+resulting attestation, not holding funds. Concretely:
+- One tool returns the unsigned x402 payment requirements for an
+  address (the SDK's `getQuote()`, unchanged).
+- A second tool accepts a `txHash` the calling agent obtained by
+  paying through *its own* wallet tooling (whatever MCP/wallet session
+  that client already has, exactly the same handoff
+  `plugins/vouch402.md`'s `send_calls` step already relies on, just at
+  the MCP-tool-response layer instead of a shared session) and
+  completes fetch + independent EAS verification (the SDK's
+  `fetchScore`/`verifyAttestation`).
+- This server's own `node_modules` would never need `ethers`' signing
+  path or a keystore loader at all: strictly less attack surface than
+  the CLI, not just a parallel design.
+
+The tradeoff, stated honestly rather than glossed over: this makes the
+standalone server strictly less convenient for a caller with no wallet
+tooling of its own at all (unlike the CLI, which is fine holding a
+local keystore since a human runs it directly and can type a
+password). That's the real cost of option (b), and worth confirming is
+acceptable before building against it.
+
+**Not deciding this unilaterally, per the user's own instruction.
+Asking directly before writing any Phase 10 code.**
+
+**Decided: option (b), non-custodial two-tool split, confirmed by the
+user.** Building the standalone MCP server against that design now.
+
+## 2026-08-13: Phase 10 gate met, vouch402-mcp-server
+
+Built `mcp-server/` on the `@modelcontextprotocol/sdk` (installed
+fresh, its real types read directly rather than assumed, since neither
+`.agents/skills/base-mcp/` nor `build-on-base/` documented the
+TypeScript server API itself). Two tools, `get_payment_quote` and
+`fetch_risk_score`, both thin wrappers over the SDK's existing
+`getQuote`/`fetchScore`/`verifyAttestation`. Confirms the non-custodial
+design holds structurally, not just by intent: this package has no
+`viem`/`ethers` signing dependency in its own runtime code path at
+all, only in its test (which stands in for "the calling agent's own
+wallet"). Caught one real logic bug before it shipped: an early draft
+called an attestation "verified" by comparing `attestation.attester`
+to the quote's `payTo`. Those are deliberately different wallets in
+production (see "Split payTo (treasury) from the signer wallet"
+above): the check would have silently reported every real,
+successfully-verified mainnet attestation as unverified. Fixed to what
+"verified" actually means here: `verifyAttestation()` already only
+returns once it resolves a genuine non-zero attester on EAS (its own
+retry loop's whole purpose), so reaching that line without it throwing
+*is* the independent proof; the tool only additionally checks
+`!revoked`.
+
+**Gate run for real, a real MCP client, not assumed**: Claude Code's
+own MCP connections only load at session start (the same constraint
+already hit trying to live-test the Phase 5 plugin against base-mcp,
+still unresolved as of this entry), so adding this server to
+`.mcp.json` wouldn't have been testable within this same session
+either. Wrote `mcp-server/test/mcp.test.ts` instead: a real
+`@modelcontextprotocol/sdk` `Client`, connected over `StdioClientTransport`
+to the actual built `dist/index.js` (a real child process, real
+JSON-RPC over stdio, the same wire protocol any real MCP host uses,
+not a direct call into the handler functions), driving both tools
+against a local Base Sepolia server instance (same pattern as the SDK
+and CLI tests). `npm test`: 2/2 passed. `tools/list` returns exactly
+the two documented tools; the full quote -> pay -> fetch flow completes
+through real tool calls with a real testnet payment made by the test's
+own stand-in "calling agent" (the SDK's `pay()`, never the server),
+and the returned attestation resolves as genuinely verified. `npm pack
+--dry-run`: valid 3.1 kB tarball, `dist/` + `package.json` only.
+
+Same `tsconfig.json`/`tsconfig.build.json` split as the SDK fix above,
+applied here from the start this time: the base config includes
+`test/**/*` with no `rootDir` constraint, so `tsc --noEmit` actually
+type-checks the test file instead of silently skipping it.
+
+**Documented plainly in `mcp-server/README.md`**, per the gate's
+explicit requirement: a dedicated section states the non-custodial
+design isn't an oversight, why it was chosen, and the real tradeoff
+this creates (unusable for a caller with no wallet tooling of its own,
+unlike the CLI) rather than only describing the upside.
+
+**Not run**: the real `npm publish`. Flagged publish-ready pending the
+user's go-ahead, same as the other two packages.
+
+All three Phase 8-10 packages (`vouch402-sdk`, `vouch402`,
+`vouch402-mcp-server`) are now built, real-verified against Base
+Sepolia, and pack cleanly. None published.
