@@ -34,7 +34,7 @@
   },
   "howItWorks": {
     "title": "How it works",
-    "subtitle": "Every paid request follows the same verifiable path — no step is hidden or assumed.",
+    "subtitle": "Every paid request follows the same verifiable path: no step is hidden or assumed.",
     "steps": {
       "quote": {
         "title": "Request a quote",
@@ -42,19 +42,19 @@
       },
       "pay": {
         "title": "Pay on-chain",
-        "description": "Send the quoted USDC amount directly to the payTo address. A real, standard ERC-20 transfer — no facilitator, no off-chain step to trust."
+        "description": "Send the quoted USDC amount directly to the payTo address. A real, standard ERC-20 transfer: no facilitator, no off-chain step to trust."
       },
       "fulfill": {
         "title": "Get the score",
-        "description": "Retry with the transaction hash as proof. The server verifies the payment on-chain — amount, recipient, sender, not-already-used — before releasing anything."
+        "description": "Retry with the transaction hash as proof. The server verifies the payment on-chain (amount, recipient, sender, not-already-used) before releasing anything."
       },
       "attest": {
         "title": "Fulfillment is attested",
-        "description": "An EAS attestation recording exactly what was returned is created on-chain automatically, and its UID comes back in the response — resolvable independently, without trusting this page."
+        "description": "An EAS attestation recording exactly what was returned is created on-chain automatically, and its UID comes back in the response: resolvable independently, without trusting this page."
       },
       "dispute": {
         "title": "Dispute if something's wrong",
-        "description": "POST /v1/disputes against the attestation, signed by the original payer. Filed on-chain, linked to the fulfillment it disputes — a permanent, public record either way."
+        "description": "POST /v1/disputes against the attestation, signed by the original payer. Filed on-chain, linked to the fulfillment it disputes: a permanent, public record either way."
       }
     }
   },
@@ -82,13 +82,13 @@
   "docs": {
     "title": "Documentation",
     "tableOfContents": "On this page",
-    "sourceNote": "This page renders docs/TECHNICAL_SPEC.md directly from the repository — technical reference content, kept in English regardless of site language, matching standard developer-documentation convention."
+    "sourceNote": "This page renders docs/TECHNICAL_SPEC.md directly from the repository: technical reference content, kept in English regardless of site language, matching standard developer-documentation convention."
   },
   "liveStats": {
     "title": "Live activity",
-    "subtitle": "Real counters from the live deployment — not estimated, not a mockup.",
+    "subtitle": "Real counters from the live deployment: not estimated, not a mockup.",
     "mainnetBadge": "Base mainnet",
-    "mainnetNote": "Always shown for mainnet, regardless of the network selector above — testnet activity is development noise, not a meaningful usage signal.",
+    "mainnetNote": "Always shown for mainnet, regardless of the network selector above: testnet activity is development noise, not a meaningful usage signal.",
     "loadError": "Couldn't load live stats from the API just now.",
     "stats": {
       "uniquePayers": "Unique payers",
@@ -100,16 +100,16 @@
   },
   "tryIt": {
     "title": "Try it",
-    "subtitle": "A real x402 payment, right here — no testnet play-money theater, an actual on-chain USDC transfer verified by the live API.",
+    "subtitle": "A real x402 payment, right here: no testnet play-money theater, an actual on-chain USDC transfer verified by the live API.",
     "addressLabel": "Base address to score",
-    "addressPlaceholder": "0x…",
+    "addressPlaceholder": "0x...",
     "addressInvalid": "Enter a valid 0x-prefixed Base address.",
-    "networkNote": "Runs on {network} — switch networks in the navbar above. Testnet is the safe default: no real funds involved.",
+    "networkNote": "Runs on {network}. Switch networks in the navbar above. Testnet is the safe default: no real funds involved.",
     "phase": {
-      "quoting": "Requesting a quote…",
-      "awaitingPayment": "Approve {amount} USDC to {payTo} in your wallet…",
-      "confirming": "Confirming the payment on-chain…",
-      "fulfilling": "Payment confirmed — fetching the risk score…",
+      "quoting": "Requesting a quote...",
+      "awaitingPayment": "Approve {amount} USDC to {payTo} in your wallet...",
+      "confirming": "Confirming the payment on-chain...",
+      "fulfilling": "Payment confirmed: fetching the risk score...",
       "error": "Something went wrong",
       "tryAgain": "Try again"
     },
