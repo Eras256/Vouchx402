@@ -1,9 +1,18 @@
 import { createWalletClient, createPublicClient, http, encodeFunctionData, type Account } from "viem";
 import { base, baseSepolia } from "viem/chains";
-import { EAS, ZERO_ADDRESS } from "@ethereum-attestation-service/eas-sdk";
+import { createRequire } from "node:module";
 import { JsonRpcProvider } from "ethers";
 import { DEFAULT_API_BASE_URL, EAS_ADDRESS, erc20TransferAbi, rpcUrlFor } from "./constants.js";
 import type { FulfillmentAttestation, Network, PaymentProof, RiskScoreResult, X402Requirement } from "./types.js";
+
+// eas-sdk's package.json "exports" routes ESM importers to its lib.esm
+// build, whose `import { isEqual } from "lodash"` doesn't survive Node's
+// strict ESM loader (lodash's CJS export shape isn't statically
+// analyzable). Forcing require() here resolves the "default" condition
+// instead, the same CJS build the main Vouch402 repo already depends on
+// successfully. Confirmed by hitting the real failure first, not assumed.
+const require = createRequire(import.meta.url);
+const { EAS, ZERO_ADDRESS } = require("@ethereum-attestation-service/eas-sdk") as typeof import("@ethereum-attestation-service/eas-sdk");
 
 export interface GetQuoteOptions {
   /** Defaults to the live Vouch402 instance. Override for a local/staging server. */
@@ -140,6 +149,7 @@ export interface GetRiskScoreOptions extends FetchScoreOptions, VerifyAttestatio
 
 export interface GetRiskScoreResult extends RiskScoreResult {
   txHash: `0x${string}`;
+  network: Network;
   attestation?: FulfillmentAttestation;
 }
 
@@ -156,5 +166,5 @@ export async function getRiskScore(
   const attestation = options.skipVerification
     ? undefined
     : await verifyAttestation(result.attestationUid, quote.network, options);
-  return { ...result, txHash, attestation };
+  return { ...result, txHash, network: quote.network, attestation };
 }

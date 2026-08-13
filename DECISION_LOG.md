@@ -1219,3 +1219,92 @@ the user's explicit go-ahead.
 
 Next: Phase 9 (CLI), depending on this package rather than
 reimplementing any of its logic.
+
+## 2026-08-13: Phase 9 gate met, vouch402 CLI, and three real bugs it surfaced
+
+Built `cli/` as a thin wrapper: `vouch402 score <address>` does
+argument parsing, keystore loading, and output formatting; every step
+of the actual flow is `vouch402-sdk`'s `getRiskScore`/`easExplorerUrl`,
+not reimplemented. Key loading mirrors the main repo's own pattern
+(`src/lib/keystore.ts`): decrypts a Foundry keystore
+(`VOUCH402_KEYSTORE_ACCOUNT`/`_PASSWORD`, or `_JSON` inline), never a
+raw private key in an env var. Added `network` to the SDK's
+`GetRiskScoreResult` while wiring this up: the CLI needs it for the
+explorer link, and re-deriving it from a second `getQuote()` call
+would have been exactly the kind of cross-package duplication the
+architecture rule warns against, so it was added to the SDK's return
+value instead, one line, useful to any consumer.
+
+**Actually running the compiled output (not just `vitest`/`tsc`)
+surfaced a real bug already latent in the SDK.** `sdk/test/sdk.test.ts`
+never caught it: `vitest` resolves modules through its own
+bundler-style transform, not Node's native ESM loader. Running
+`node cli/dist/index.js` directly hit it immediately:
+`@ethereum-attestation-service/eas-sdk`'s `package.json` `exports`
+routes ESM importers to its `lib.esm` build, and that build's own
+`import { isEqual } from "lodash"` doesn't survive Node's strict ESM
+loader (lodash's CJS export shape isn't statically analyzable by
+`cjs-module-lexer`). The main repo never hits this: it's
+`"type": "commonjs"`, so `require()` (no static analysis) always
+resolved the working CJS build instead. Fixed in `sdk/src/client.ts`
+by forcing that same CJS resolution via `createRequire(import.meta.url)`
+for the one `eas-sdk` import, rather than trying to patch or pin
+`lodash` itself, a third-party package's own internal dependency.
+Confirmed by hitting the real failure first, not assumed or guessed at.
+
+**Two more real, if smaller, issues found the same way:**
+- `sdk/tsconfig.json` set `rootDir: "src"` while also including
+  `test/**/*`: a real `tsc` error (`TS6059`), invisible before because
+  nothing had actually run plain `tsc --noEmit` against this config
+  since the test file was added. `vitest`'s own type handling doesn't
+  enforce `rootDir`. Fixed by dropping `rootDir` from the base config
+  (the build-only `tsconfig.build.json`, which excludes `test/`, keeps
+  its own explicit `rootDir: "src"`, unaffected).
+- `sdk/`, `cli/`, and the repo root each have independent
+  `node_modules` (this repo's own established sibling-package
+  convention, not workspaces), and two fresh, independent `npm install`
+  runs resolved *different* patch versions of `viem` under the same
+  `^2.55.13` range (`2.55.13` at the root, `2.55.15` in `sdk/`).
+  TypeScript treats those as two distinct, structurally-incompatible
+  `Account` types, since neither install is aware of the other: a real
+  `tsc` error when `sdk/test/sdk.test.ts` passes a root-loaded account
+  into an SDK function, and again when the CLI passes its own
+  keystore-loaded account into the SDK. Pinned `viem` to the exact same
+  version (no caret) in the root, `sdk/`, and `cli/` `package.json`s so
+  a fresh install always resolves identically across all three. This is
+  a real, structural fragility of the sibling-package-without-
+  workspaces layout: worth moving to npm workspaces if this keeps
+  recurring across more shared dependencies, but out of scope to change
+  now for one already-fixed dependency.
+
+**Gate run for real, fresh install, not the local dev wiring alone**:
+`npm pack` both `sdk/` and `cli/`, then (temporarily pointing `cli/`'s
+`vouch402-sdk` dependency at the packed SDK tarball via an absolute
+`file:` path, since the registry doesn't have either package yet)
+`npm install`ed the packed CLI tarball into an empty directory outside
+this repo entirely (371 packages resolved fresh) and ran the installed
+bin directly. Real output: a real Base Sepolia payment
+(`0x21c3209466b9358d72f4eb9e5a6f7a86d82a21de4b81e40989fb432f07b57c59`),
+score `70`, attestation `0x1b8f086fb225a4920590d0c890ba7eaacbc2c9de205b69f4bbb98962e5dee551`
+independently verified via EAS. `npx <tarball-path>` itself (as
+distinct from `npm install` + running the bin) was flaky in this
+Windows/Git-Bash environment: one attempt returned success with no
+output and no server-side effect, another hung until timeout. Not
+chased further: this reads as environment/tooling friction specific to
+`npx`'s ephemeral-install path on this machine, not a defect in the
+package itself, since the identical bin, installed the standard way,
+ran correctly and repeatably. Worth re-checking once the package is
+actually on the registry and `npx vouch402` can be tested as a real
+user would run it.
+
+Reverted the temporary absolute `file:` pointer back to `file:../sdk`
+for normal local development afterward; the fresh-install test above
+already covered what a real registry-based install would look like.
+
+**Not run**: the real `npm publish` for either package. Both flagged
+publish-ready pending the user's go-ahead, same as the SDK.
+
+Next: Phase 10 (standalone MCP server). Per the user's explicit
+instruction, the key-management design there is a real judgment call
+to surface as an "Open questions" entry before building, not decide
+unilaterally.
