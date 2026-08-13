@@ -4,7 +4,7 @@
  * EAS resolution -> a dispute filed against that attestation -> metrics.
  *
  * Runs unattended against whichever network is configured in .env
- * (NETWORK=base-sepolia|base) — needs the deployer wallet funded with
+ * (NETWORK=base-sepolia|base), needs the deployer wallet funded with
  * gas + USDC on that network. See README "Funding the testnet wallet".
  */
 import { createWalletClient } from "viem";
@@ -24,7 +24,7 @@ function step(n: number, label: string) {
 
 async function main() {
   const network = env.network;
-  console.log(`Vouch402 demo — network=${network}`);
+  console.log(`Vouch402 demo, network=${network}`);
 
   step(0, "Ensuring x402-SAP schemas are registered (idempotent)");
   await registerSchemas(network);
@@ -83,7 +83,7 @@ async function main() {
 
     step(5, "Filing a dispute against that attestation (shows the x402-SAP dispute path)");
     const reasonCode = DisputeReasonCode.Other;
-    const details = "demo dispute — not a real complaint, just exercising the flow";
+    const details = "demo dispute, not a real complaint, just exercising the flow";
     const message = disputeMessage(result.attestationUid, reasonCode, details);
     const signature = await account.signMessage({ message });
     const disputeRes = await fetch(`${baseUrl}/v1/disputes`, {
