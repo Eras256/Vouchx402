@@ -10,8 +10,8 @@ import { truncateHex } from "@/lib/format";
 const GITHUB_URL = "https://github.com/Eras256/Vouchx402";
 
 // A real, independently-verified mainnet fulfillment attestation (see
-// DECISION_LOG.md "First real mainnet activity on the live deployment")
-// — not a mockup. Becomes the latest live one once 7c wires /v1/activity
+// DECISION_LOG.md "First real mainnet activity on the live deployment"),
+// not a mockup. Becomes the latest live one once 7c wires /v1/activity
 // in; kept as a real, checkable value in the meantime rather than a
 // placeholder, per the brief's own "a live, real attestation UID
 // resolving on screen beats a generic headline" guidance.
@@ -56,7 +56,7 @@ export function Hero() {
           </div>
         </div>
 
-        {/* The "concrete proof" panel — a real attestation, not a mockup */}
+        {/* The "concrete proof" panel: a real attestation, not a mockup */}
         <a
           href={easExplorerUrl(PROOF.network, PROOF.attestationUid)}
           target="_blank"
