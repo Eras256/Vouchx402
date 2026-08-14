@@ -24,7 +24,7 @@ export interface VerifiedPayment {
  *   4. confirm amount and recipient match the quoted 402 requirements
  *   5. mark processed BEFORE the caller returns the resource
  *
- * Never trusts the client's claim alone — every field is re-derived from
+ * Never trusts the client's claim alone: every field is re-derived from
  * the on-chain transaction receipt itself.
  */
 export async function verifyPayment(network: NetworkName, proof: PaymentProof): Promise<VerifiedPayment> {
@@ -34,7 +34,7 @@ export async function verifyPayment(network: NetworkName, proof: PaymentProof): 
   if (Date.now() > quote.expiresAt) throw new PaymentVerificationError("Quote expired");
   if (quote.network !== network) throw new PaymentVerificationError("Network mismatch for quote");
 
-  // 1. Replay protection — reject if this tx was already used to pay for something.
+  // 1. Replay protection: reject if this tx was already used to pay for something.
   if (isPaymentProcessed(proof.txHash)) {
     throw new PaymentVerificationError("Payment already processed (replay)");
   }
@@ -76,7 +76,7 @@ export async function verifyPayment(network: NetworkName, proof: PaymentProof): 
       matched = { from, to, value };
       break;
     } catch {
-      // not a Transfer log on this contract's ABI shape — skip
+      // not a Transfer log on this contract's ABI shape: skip
       continue;
     }
   }
