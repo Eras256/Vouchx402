@@ -3,12 +3,12 @@ import path from "node:path";
 
 const ROOT = path.resolve(__dirname, "..", "..");
 dotenv.config({ path: path.join(ROOT, ".env") });
-// .env.local is optional and loaded second, with override — standard
+// .env.local is optional and loaded second, with override: standard
 // convention (Next.js/Vite/CRA all do this): .env is the tracked-in-spirit
 // baseline (still gitignored here, but the "normal" file), .env.local is
 // for values you don't want duplicated across files (e.g. only what's
 // new/different for a mainnet cutover). Missing keys in .env.local simply
-// keep whatever .env already set — this never blanks out a value, only
+// keep whatever .env already set: this never blanks out a value, only
 // overrides the ones actually present here.
 dotenv.config({ path: path.join(ROOT, ".env.local"), override: true });
 
@@ -31,7 +31,7 @@ export const env = {
 
   port: Number(optional("PORT", "3402")),
   priceUsdc: optional("PRICE_USDC", "0.01"),
-  // Legacy single value — still read as the Sepolia fallback below, and
+  // Legacy single value, still read as the Sepolia fallback below, and
   // used directly in a few places as "an address to test against" where
   // the security distinction below doesn't apply.
   payTo: optional("X402_PAY_TO_ADDRESS", ""),
@@ -73,11 +73,11 @@ export function usdcAddressFor(network: NetworkName): `0x${string}` {
 /**
  * Split from a single flat `payTo` deliberately (see DECISION_LOG.md):
  * the same wallet was serving as both the autonomous signer (its key
- * lives on the server, decrypted at runtime — has to be "hot") and the
+ * lives on the server, decrypted at runtime, has to be "hot") and the
  * treasury address that receives real payment revenue. Fine for testnet,
  * not something to carry into mainnet without a decision. Sepolia keeps
  * falling back to the legacy single value so nothing about the existing
- * test suite changes; mainnet has **no fallback** — it throws rather
+ * test suite changes; mainnet has **no fallback**: it throws rather
  * than silently reusing the signer wallet as treasury.
  */
 export function payToFor(network: NetworkName): string {
@@ -85,7 +85,7 @@ export function payToFor(network: NetworkName): string {
     if (!env.payToMainnet) {
       throw new Error(
         "X402_PAY_TO_ADDRESS_MAINNET is not configured. Mainnet intentionally does not fall back to " +
-          "X402_PAY_TO_ADDRESS (the signer wallet) — set it to an address you actually control before switching NETWORK=base."
+          "X402_PAY_TO_ADDRESS (the signer wallet); set it to an address you actually control before switching NETWORK=base."
       );
     }
     return env.payToMainnet;
@@ -98,9 +98,9 @@ export function explorerBaseFor(network: NetworkName): string {
 }
 
 /**
- * EAS's own explorer, not BaseScan — for viewing an attestation's decoded
+ * EAS's own explorer, not BaseScan: for viewing an attestation's decoded
  * fields directly rather than raw calldata. The subdomain happens to
- * equal the `NetworkName` value itself ("base" / "base-sepolia") —
+ * equal the `NetworkName` value itself ("base" / "base-sepolia"),
  * verified both resolve to real attestations before relying on this,
  * not assumed from the mainnet one alone.
  */
@@ -110,7 +110,7 @@ export function easExplorerAttestationUrl(network: NetworkName, uid: string): st
 
 /**
  * Etherscan's per-chain V1 endpoints (api.basescan.org/api,
- * api-sepolia.basescan.org/api) are deprecated — confirmed directly (a
+ * api-sepolia.basescan.org/api) are deprecated: confirmed directly (a
  * live call returned `{"status":"0","message":"NOTOK","result":"...
  * deprecated V1 endpoint..."}`), not assumed. V2 unifies every chain
  * under one host with `chainid` selecting the network; Base's chain ID
@@ -122,7 +122,7 @@ export function etherscanApiBaseFor(_network: NetworkName): string {
 
 // These two read `process.env` live (not the `env` snapshot above) because
 // `registerSchemas()` (src/attestation/schemas.ts) can write a freshly
-// registered UID mid-process — e.g. from the same test run that then
+// registered UID mid-process, e.g. from the same test run that then
 // immediately needs to use it. A frozen snapshot would miss that update
 // until the process restarted.
 export function easSchemaUidFulfillment(network: NetworkName): string {
