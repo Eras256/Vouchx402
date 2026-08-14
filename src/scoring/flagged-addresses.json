@@ -2,6 +2,6 @@
   "version": "0.0.0-empty",
   "lastUpdated": null,
   "source": null,
-  "note": "v0 placeholder. Intentionally shipped empty: no addresses are bundled here without a verifiable, cited source (e.g. an OFAC SDN list export or a maintained community scam-address feed) and a documented update process. Populating this file is deliberate follow-up work, not part of Phase 1 — see docs/TECHNICAL_SPEC.md's 'v0 heuristic' note and DECISION_LOG.md.",
+  "note": "v0 placeholder. Intentionally shipped empty: no addresses are bundled here without a verifiable, cited source (e.g. an OFAC SDN list export or a maintained community scam-address feed) and a documented update process. Populating this file is deliberate follow-up work, not part of Phase 1; see docs/TECHNICAL_SPEC.md's 'v0 heuristic' note and DECISION_LOG.md.",
   "addresses": []
 }
