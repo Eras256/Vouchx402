@@ -157,8 +157,22 @@
     "title": "Vouch402",
     "subtitle": "Proof of fulfillment for x402 payments",
     "intro": "x402 defines how an autonomous agent pays for a resource over HTTP. It does not define how anyone, the payer, the seller, or a third party, can later verify whether the paid resource was actually delivered. Once a payment settles, there is no portable, queryable record connecting that payment to a fulfillment outcome, which makes it hard to build reputation, credit, or dispute-resolution systems for agent-to-agent commerce on top of x402 today. Vouch402 is an x402-metered risk-score API for Base addresses that closes this gap for itself: x402-SAP (Service Attestation Protocol), a small EAS-based attestation layer, records an independently verifiable, on-chain outcome for every paid request.",
+    "cover": {
+      "eyebrow": "Overview",
+      "summary": "An x402-metered risk-score API for Base addresses, with an on-chain attestation layer recording whether every paid request was actually fulfilled.",
+      "links": {
+        "github": "GitHub",
+        "docs": "Docs",
+        "sdk": "npm: vouch402-sdk"
+      }
+    },
+    "problem": {
+      "eyebrow": "Problem",
+      "title": "x402 defines payment. Not proof of delivery."
+    },
     "howItWorks": {
-      "title": "How it works",
+      "eyebrow": "How it works",
+      "title": "Quote, pay, fetch, verify.",
       "subtitle": "Four steps, each independently checkable.",
       "steps": {
         "quote": {
@@ -181,6 +195,7 @@
       "codeLabel": "The real request/response shape:"
     },
     "proof": {
+      "eyebrow": "Proof",
       "title": "Proof, not claims",
       "subtitle": "Every fact below resolves to something you can check yourself, not Vouch402's word alone.",
       "settledPayment": "Settled payment",
@@ -191,6 +206,7 @@
       "liveMetricsDescription": "Unique payers, requests served, volume, attestations, and disputes: real counters, not estimated, updated on every real request."
     },
     "ecosystem": {
+      "eyebrow": "Ecosystem",
       "title": "Built for the Base ecosystem",
       "subtitle": "Available as an API, a Base MCP plugin, and three npm packages.",
       "plugin": {
@@ -207,11 +223,13 @@
       }
     },
     "roadmap": {
+      "eyebrow": "Roadmap",
       "title": "What this is building toward",
       "body1": "The attestation data Vouch402 produces, a growing, queryable graph of payer, payee, outcome, and dispute records, is designed to be consumable by future systems that need agent reputation or dispute-resolution signals, without requiring those systems to re-instrument every individual x402 resource server themselves.",
       "body2": "One limitation, stated plainly rather than glossed over: fulfillment attestations today are self-attested by the resource server (the seller), not by a neutral third party. This is an intentional, explicitly-scoped starting point. It establishes the data format and produces a real, queryable fulfillment history, while decentralized or neutral-party verification (staking and slashing, multi-attester consensus) is left as a deliberately separate, future layer built on top of this data, not solved by this specification."
     },
     "links": {
+      "eyebrow": "Links",
       "title": "Links",
       "github": "GitHub repository",
       "docs": "Technical documentation",

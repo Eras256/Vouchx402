@@ -1791,3 +1791,51 @@ for the three npm pages, the registry API given the known frontend
 false-negative), all resolving; dark mode confirmed correct via
 screenshot, matching the rest of the site since nothing page-specific
 was introduced to the theming.
+
+## 2026-08-13: /pitch restyled as a slide deck
+
+The user asked for `/pitch` in a slide-deck format, pointing at a
+specific reference (`kumply.xyz/pitch`, coincidentally another project
+of the user's own). Looked at the real page (Playwright screenshots,
+not just a text/markdown fetch, since the ask was fundamentally about
+visual format) before building anything: it's a scrolling page of
+bounded cards, one per topic, each with a small tracked-out eyebrow
+label top-left and a `01 / 12`-style position counter top-right, no
+carousel or JS-driven pagination. Adopted that structural pattern, not
+its content approach: Kumply's deck is explicitly a grant-application
+pitch (dollar figures, a milestone budget, "The Ask"). Vouch402's
+`/pitch` already has a standing content rule against exactly that
+(no grants, no dollar amounts, developer-verifiable claims only per
+the entry above), and that rule stays in force here: only the card/
+eyebrow/counter layout was reused, none of the funding-pitch content
+shape.
+
+Built `PitchSlide` (`components/pitch/pitch-slide.tsx`), a single
+wrapper providing the card chrome and numbering, and reused it across
+all seven sections. Split the old combined intro into two slides
+(`Cover`, short and punchy, and a dedicated `Problem` slide carrying
+the full explanation) to match the reference's rhythm of a light cover
+followed by a real problem statement, rather than front-loading a long
+paragraph on slide one. All prior content, links, and translations
+carried over unchanged; only new copy was the two new eyebrow labels
+per slide and the cover's short summary line and compact link row
+(GitHub/Docs/npm), added in both locales. The "known v0 limitation"
+paragraph on the Roadmap slide got a bordered callout treatment
+(`border-warning/30 bg-warning/5`, an existing token already used
+site-wide for exactly this "important caveat, not a claim" register,
+not a new color invented for this one box).
+
+Nested cards (the proof table, the plugin panel, the package grid)
+needed their own background changed from `bg-card` to `bg-muted/50`:
+sitting inside a `PitchSlide` (also `bg-card`) they'd otherwise be
+invisible against their own parent, since Vouch402's `--card` and
+`--background` tokens are close enough that two nested cards using the
+same fill read as one flat surface. Caught by looking at the actual
+render, not assumed from the class names alone.
+
+**Verified again after the restructure**, not assumed still correct
+because the content itself didn't change: `tsc`/`eslint` clean, zero
+console errors across both locales at 375px and 1440px, dark mode
+confirmed by screenshot (card elevation reads correctly in both
+themes), and all 14 external links re-checked live (same recalibrated
+npm 403 false-negative as before, everything else `200`).

@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { ArrowUpRight } from "lucide-react";
 import { truncateHex } from "@/lib/format";
+import { PitchSlide } from "./pitch-slide";
 
 const SETTLED_PAYMENT_TX = "0x6e44081aa3f05c73f6c9c32dc456f0231c3a690a33159765917ff096d138659c";
 const FULFILLMENT_TX = "0xe2b5002c923bd9b49afce698f9d0f7ebef66d24f8c1eafd22c0a64e7c5f7ebb7";
@@ -22,49 +23,47 @@ export function PitchProof() {
   ];
 
   return (
-    <section id="proof" className="border-t border-border">
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{t("title")}</h2>
-        <p className="prose-column mt-3 text-muted-foreground">{t("subtitle")}</p>
+    <PitchSlide id="proof" eyebrow={t("eyebrow")} index={4}>
+      <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{t("title")}</h2>
+      <p className="prose-column mt-3 text-muted-foreground">{t("subtitle")}</p>
 
-        <div className="mt-10 divide-y divide-border rounded-xl border border-border bg-card">
-          {rows.map((row) => (
-            <a
-              key={row.label}
-              href={row.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50 sm:p-5"
-            >
-              <span className="text-sm text-muted-foreground">{row.label}</span>
-              <span className="data flex items-center gap-1.5 truncate text-sm text-foreground">
-                {truncateHex(row.value)}
-                <ArrowUpRight
-                  className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
-                  aria-hidden="true"
-                />
-              </span>
-            </a>
-          ))}
+      <div className="mt-10 divide-y divide-border rounded-xl border border-border bg-muted/50">
+        {rows.map((row) => (
           <a
-            href="https://vouch402.fly.dev/v1/metrics"
+            key={row.label}
+            href={row.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50 sm:p-5"
+            className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted sm:p-5"
           >
-            <span>
-              <span className="block text-sm text-muted-foreground">{t("liveMetrics")}</span>
-              <span className="mt-0.5 block max-w-md text-xs text-muted-foreground/80">
-                {t("liveMetricsDescription")}
-              </span>
+            <span className="text-sm text-muted-foreground">{row.label}</span>
+            <span className="data flex items-center gap-1.5 truncate text-sm text-foreground">
+              {truncateHex(row.value)}
+              <ArrowUpRight
+                className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                aria-hidden="true"
+              />
             </span>
-            <ArrowUpRight
-              className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
-              aria-hidden="true"
-            />
           </a>
-        </div>
+        ))}
+        <a
+          href="https://vouch402.fly.dev/v1/metrics"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted sm:p-5"
+        >
+          <span>
+            <span className="block text-sm text-muted-foreground">{t("liveMetrics")}</span>
+            <span className="mt-0.5 block max-w-md text-xs text-muted-foreground/80">
+              {t("liveMetricsDescription")}
+            </span>
+          </span>
+          <ArrowUpRight
+            className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+            aria-hidden="true"
+          />
+        </a>
       </div>
-    </section>
+    </PitchSlide>
   );
 }

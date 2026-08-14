@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { CodeBlock } from "@/components/docs/code-block";
+import { PitchSlide } from "./pitch-slide";
 
 const STEP_KEYS = ["quote", "pay", "fetch", "verify"] as const;
 
@@ -18,33 +19,31 @@ export function PitchHowItWorks() {
   const t = useTranslations("pitch.howItWorks");
 
   return (
-    <section id="how-it-works" className="border-t border-border">
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{t("title")}</h2>
-        <p className="prose-column mt-3 text-muted-foreground">{t("subtitle")}</p>
+    <PitchSlide id="how-it-works" eyebrow={t("eyebrow")} index={3}>
+      <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{t("title")}</h2>
+      <p className="prose-column mt-3 text-muted-foreground">{t("subtitle")}</p>
 
-        <ol className="mt-10 space-y-6">
-          {STEP_KEYS.map((key, i) => (
-            <li key={key} className="flex gap-4">
-              <div
-                aria-hidden="true"
-                className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold text-primary"
-              >
-                {i + 1}
-              </div>
-              <div className="pt-0.5">
-                <h3 className="font-medium">{t(`steps.${key}.title`)}</h3>
-                <p className="prose-column mt-1 text-sm text-muted-foreground">{t(`steps.${key}.description`)}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      <ol className="mt-10 space-y-6">
+        {STEP_KEYS.map((key, i) => (
+          <li key={key} className="flex gap-4">
+            <div
+              aria-hidden="true"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold text-primary"
+            >
+              {i + 1}
+            </div>
+            <div className="pt-0.5">
+              <h3 className="font-medium">{t(`steps.${key}.title`)}</h3>
+              <p className="prose-column mt-1 text-sm text-muted-foreground">{t(`steps.${key}.description`)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
 
-        <p className="mt-10 text-sm font-medium text-muted-foreground">{t("codeLabel")}</p>
-        <div className="mt-3">
-          <CodeBlock code={CURL_EXAMPLE} language="bash" />
-        </div>
+      <p className="mt-10 text-sm font-medium text-muted-foreground">{t("codeLabel")}</p>
+      <div className="mt-3">
+        <CodeBlock code={CURL_EXAMPLE} language="bash" />
       </div>
-    </section>
+    </PitchSlide>
   );
 }
