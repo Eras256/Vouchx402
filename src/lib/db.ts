@@ -5,9 +5,9 @@ import { env } from "./env";
 
 /**
  * Local persistence for Vouch402. Uses Node's built-in `node:sqlite`
- * (stable in current Node LTS) instead of `better-sqlite3` — no native
+ * (stable in current Node LTS) instead of `better-sqlite3`: no native
  * build step required. See DECISION_LOG.md. Deliberately a single local
- * file, not a hosted database service — sufficient at this stage per the
+ * file, not a hosted database service, sufficient at this stage per the
  * technical spec's /v1/metrics requirements.
  */
 let db: DatabaseSync | null = null;
@@ -28,7 +28,7 @@ export function getDb(): DatabaseSync {
 }
 
 function migrate(database: DatabaseSync) {
-  // Phase 1 — payment replay protection and issued-quote tracking.
+  // Phase 1: payment replay protection and issued-quote tracking.
   database.exec(`
     CREATE TABLE IF NOT EXISTS quotes (
       resource_id     TEXT PRIMARY KEY,
@@ -62,7 +62,7 @@ function migrate(database: DatabaseSync) {
       network         TEXT
     );
 
-    -- Phase 4 — every attestation and dispute this server has emitted,
+    -- Phase 4: every attestation and dispute this server has emitted,
     -- for /v1/metrics. Written from the single choke points that create
     -- them (attestFulfillment / submitDispute), so this stays accurate
     -- even for status=Error fulfillment attestations that never produce
@@ -90,7 +90,7 @@ function migrate(database: DatabaseSync) {
 }
 
 /**
- * `requests_served` predates network-aware metrics — an existing database
+ * `requests_served` predates network-aware metrics: an existing database
  * (the live production one included) has the table without a `network`
  * column, and `CREATE TABLE IF NOT EXISTS` doesn't retroactively add one.
  * Guarded ALTER TABLE + backfill from `processed_payments` (same
@@ -128,12 +128,12 @@ export interface Quote {
 }
 
 /**
- * `GET /v1/risk-score/:address` is public and unpaid on the first call —
+ * `GET /v1/risk-score/:address` is public and unpaid on the first call:
  * every hit (including repeated/automated ones with no payment ever
  * following) inserts a quote row, with nothing else in the codebase ever
  * deleting one. Unbounded on a public endpoint: sustained hammering grows
  * the table indefinitely on a small (1GB) volume. Swept opportunistically
- * on every insert rather than a separate cron/scheduler — self-throttles
+ * on every insert rather than a separate cron/scheduler: self-throttles
  * under any traffic pattern, no extra moving parts.
  */
 function deleteExpiredUnconsumedQuotes() {
@@ -252,18 +252,18 @@ export interface Metrics {
 }
 
 /**
- * Every field here is a real query over this server's own records — see
+ * Every field here is a real query over this server's own records; see
  * docs/TECHNICAL_SPEC.md ("real, not estimated"). `totalVolumeAtomic` is
  * summed in JS via BigInt (not SQL SUM) to avoid any ambiguity in how
  * node:sqlite's dynamic typing hands back large integers.
  *
  * `network`, when given, filters every field to that network only. Omit
- * it to get the original unfiltered (all-networks) behavior — kept for
+ * it to get the original unfiltered (all-networks) behavior, kept for
  * backward compatibility with anything already calling this without a
  * network in mind. The frontend (Phase 7) always passes one explicitly:
  * the pre-mainnet-cutover Sepolia test data living in this same database
- * would otherwise silently mix into what's shown as live mainnet numbers
- * — confirmed this actually happened, not a hypothetical (see
+ * would otherwise silently mix into what's shown as live mainnet numbers.
+ * Confirmed this actually happened, not a hypothetical (see
  * DECISION_LOG.md).
  */
 export function getMetrics(network?: string): Metrics {
@@ -322,7 +322,7 @@ export type ActivityItem =
 /**
  * Merges `attestations` and `disputes` into one reverse-chronological
  * feed. Both tables are small (one row per real on-chain event) so a
- * plain UNION + sort in SQL is fine at this scale — no need for a
+ * plain UNION + sort in SQL is fine at this scale: no need for a
  * denormalized activity table.
  */
 export function getRecentActivity(network?: string, limit = 20): ActivityItem[] {
