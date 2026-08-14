@@ -1,7 +1,7 @@
 import type { TocEntry } from "@/lib/toc";
 
 /**
- * A plain anchor-link list, not a scroll-spy widget — every entry is a
+ * A plain anchor-link list, not a scroll-spy widget: every entry is a
  * real link to a real heading id that rehype-slug attached to the
  * rendered markdown (see toc.ts's doc comment on why the two stay in
  * sync). No client-side JS required for the core "jump to section" job.
