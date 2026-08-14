@@ -25,7 +25,7 @@ interface EtherscanTx {
 /**
  * Pulls the address's earliest transaction via the BaseScan/Etherscan
  * "account txlist" API (sorted ascending, one result). Plain JSON-RPC has
- * no "first tx" query — this is why an explorer API + key is needed for
+ * no "first tx" query; this is why an explorer API + key is needed for
  * that specific signal. Returns [] if no key is configured or the address
  * has no history (fresh wallet).
  */
@@ -58,7 +58,7 @@ function isFlagged(address: string): boolean {
 
 /**
  * Pure scoring formula, deliberately separated from the network-fetching
- * logic below so it's unit-testable without an RPC/BaseScan dependency —
+ * logic below so it's unit-testable without an RPC/BaseScan dependency;
  * everything else in this codebase that touches the network inherits the
  * public Base Sepolia RPC's observed flakiness (see DECISION_LOG.md); this
  * function can't, by construction.
@@ -81,7 +81,7 @@ export function scoreFromSignals(signals: RiskSignals): number {
 }
 
 /**
- * v0 risk heuristic. NOT a complete risk model — see docs/TECHNICAL_SPEC.md
+ * v0 risk heuristic. NOT a complete risk model: see docs/TECHNICAL_SPEC.md
  * "Known v0 limitation" framing for the scoring signals themselves (the
  * flag list is bundled separately and versioned; see flagged-addresses.json).
  */
