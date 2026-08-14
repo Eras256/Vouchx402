@@ -1,5 +1,5 @@
 // lucide-react dropped brand/logo icons (GitHub included) in favor of
-// dedicated brand-icon packages — not worth a whole new dependency for
+// dedicated brand-icon packages; not worth a whole new dependency for
 // one mark. Standard GitHub octocat path, inlined, sized like the
 // surrounding lucide icons (currentColor so it follows the theme).
 export function GithubIcon({ className }: { className?: string }) {
