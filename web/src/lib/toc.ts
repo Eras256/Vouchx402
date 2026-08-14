@@ -9,8 +9,8 @@ export interface TocEntry {
 /**
  * Extracts a table of contents (depth 2-3 headings only) from raw
  * markdown, id'd with the exact same algorithm rehype-slug applies when
- * the document is actually rendered (github-slugger). Every heading —
- * any depth, including h1 — is run through the slugger in document
+ * the document is actually rendered (github-slugger). Every heading,
+ * any depth, including h1, is run through the slugger in document
  * order first and only then filtered, because slug de-duplication
  * depends on the shared occurrence count staying in sync with what
  * rehype-slug does over the full document; skipping straight to depth
@@ -35,8 +35,8 @@ export function extractToc(markdown: string): TocEntry[] {
 
     const depth = match[1].length;
     const raw = match[2].trim();
-    // Slug output is unaffected by inline markdown syntax either way —
-    // github-slugger's own regex strips backticks/punctuation — but the
+    // Slug output is unaffected by inline markdown syntax either way:
+    // github-slugger's own regex strips backticks/punctuation, but the
     // *display* text should read clean.
     const text = raw.replace(/`/g, "");
     const id = slugger.slug(raw);
