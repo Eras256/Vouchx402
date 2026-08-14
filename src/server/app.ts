@@ -16,18 +16,18 @@ function isNetworkName(v: unknown): v is NetworkName {
 export function createApp(): Express {
   const app = express();
   // Fly (and most PaaS) terminate TLS at the edge and forward plain HTTP
-  // internally — without this, req.protocol always reads "http", so the
+  // internally: without this, req.protocol always reads "http", so the
   // `resource` field in the 402 body would claim an insecure URL even
   // when the actual request came in over HTTPS. Confirmed live on the
-  // Fly deployment before this was added — not a hypothetical.
+  // Fly deployment before this was added, not a hypothetical.
   app.set("trust proxy", true);
-  // x402 is an open, agent-to-agent protocol over plain HTTP — every route
+  // x402 is an open, agent-to-agent protocol over plain HTTP: every route
   // here is meant to be called by arbitrary clients (including a browser),
   // and none of them rely on cookies/session auth (payment proof and
   // dispute signatures are the actual authority, not ambient credentials),
   // so a wildcard origin carries no CSRF-style risk. Added specifically
   // because the Phase 7 frontend calls this API directly from the browser
-  // (no proxy layer of its own) — verified live before this fix that the
+  // (no proxy layer of its own): verified live before this fix that the
   // API sent no Access-Control-Allow-Origin header at all, which would
   // have silently blocked every one of those calls.
   app.use((req, res, next) => {
@@ -72,7 +72,7 @@ export function createApp(): Express {
     }
 
     // Decoding is a client-input concern (malformed header -> 400), kept
-    // separate from payment verification (a domain failure -> 402) —
+    // separate from payment verification (a domain failure -> 402):
     // previously both landed in one catch block, so a garbage X-PAYMENT
     // header surfaced as a bare 500 "Internal error" instead of a clean
     // 400. The request itself was never broken; the caller's input was.
@@ -103,7 +103,7 @@ export function createApp(): Express {
       return;
     }
 
-    // Payment is verified and consumed from here on — every remaining
+    // Payment is verified and consumed from here on: every remaining
     // failure path still owes the payer an honest, on-chain record of
     // what happened (docs/TECHNICAL_SPEC.md: "including of our own
     // failures"), since there's no way to "un-charge" them at this point.
