@@ -6,11 +6,11 @@ import { useActivity } from "@/hooks/use-live-data";
 import { truncateHex, formatRelativeTime } from "@/lib/format";
 import type { ActivityItem, FulfillmentStatusCode } from "@/lib/vouch402";
 
-// Same mainnet-only scope as LiveStats — see live-stats.tsx / DECISION_LOG.md.
+// Same mainnet-only scope as LiveStats; see live-stats.tsx / DECISION_LOG.md.
 const NETWORK = "base" as const;
 const LIMIT = 10;
 
-// fulfilled=success/green, disputed=warning/amber, error=error/red — the
+// fulfilled=success/green, disputed=warning/amber, error=error/red: the
 // three status colors stay separate from --primary per the design brief.
 // Timeout reads closer to "something didn't complete cleanly" than a hard
 // failure, so it shares the dispute/warning color rather than error.
