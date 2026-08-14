@@ -12,7 +12,7 @@ import { easExplorerUrl, basescanTxUrl, toApiNetwork } from "@/lib/vouch402";
 import { truncateHex } from "@/lib/format";
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
-// Same real, checkable address used as the Hero's proof card — a
+// Same real, checkable address used as the Hero's proof card: a
 // convenient, honest default rather than an artificial placeholder.
 const DEFAULT_ADDRESS = "0x53a79B109fa77c05B043e73A284a22b57c6263b0";
 
