@@ -3,7 +3,7 @@ import { BUILDER_CODE } from "../constants/builderCode";
 
 /**
  * ERC-8021 data suffix for every outgoing transaction Vouch402's own
- * wallet sends (schema registration, attestations). Computed once —
+ * wallet sends (schema registration, attestations). Computed once:
  * `toDataSuffix` is pure given the same codes.
  */
 export const DATA_SUFFIX = Attribution.toDataSuffix({ codes: [BUILDER_CODE] });
