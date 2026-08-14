@@ -14,7 +14,7 @@ const RELATIVE_TIME_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ["minute", 60],
 ];
 
-/** "3 minutes ago" / "hace 3 minutos" — Intl.RelativeTimeFormat handles
+/** "3 minutes ago" / "hace 3 minutos": Intl.RelativeTimeFormat handles
  * pluralization and unit selection correctly per locale on its own, so
  * there's no hand-rolled "X ago" string to keep in sync across
  * messages/en.json and messages/es.json. Client-only by nature (the data
