@@ -17,12 +17,12 @@ interface Resource<T> {
  *
  * Deliberately doesn't reset `loading`/`error` synchronously when
  * `network` changes (that's a setState-in-effect anti-pattern React's own
- * lint rule flags, not a style nit) — a real tradeoff only if `network`
+ * lint rule flags, not a style nit): a real tradeoff only if `network`
  * ever actually changes post-mount, which it doesn't at either of this
  * hook's call sites today (both are pinned to "base", see
  * live-stats.tsx/recent-activity.tsx). If that changes, prior data would
  * stay visible during the refetch instead of clearing to a loading
- * state — acceptable, and worth revisiting only then. */
+ * state, acceptable, and worth revisiting only then. */
 export function useMetrics(network: ApiNetwork): Resource<Metrics> {
   const [state, setState] = useState<Resource<Metrics>>({ data: null, error: false, loading: true });
 
