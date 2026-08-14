@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { useMetrics } from "@/hooks/use-live-data";
 
-// Always mainnet, not the network selector — see DECISION_LOG.md
+// Always mainnet, not the network selector; see DECISION_LOG.md
 // ("Network selector scope for 7c, clarified"): the accumulated testnet
 // data is development noise, and letting the selector drive this section
 // would present that noise with the same visual weight as the real
@@ -38,9 +38,9 @@ export function LiveStats() {
               // 5 items doesn't divide evenly into 2 or 3 columns, which
               // otherwise leaves an empty, borderless-looking gap cell in
               // the last row at the mobile/tablet breakpoints (caught by
-              // screenshot, not assumed) — span the last item to fill it:
-              // 2-col row of [1,2][3,4][5→span2] and 3-col row of
-              // [1,2,3][4,5→span2] both fill exactly. Reset at lg, where
+              // screenshot, not assumed): span the last item to fill it:
+              // 2-col row of [1,2][3,4][5 becomes span2] and 3-col row of
+              // [1,2,3][4,5 becomes span2] both fill exactly. Reset at lg, where
               // 5 columns already fits all 5 items in one full row.
               className={`bg-card px-4 py-5 ${i === STAT_KEYS.length - 1 ? "col-span-2 lg:col-span-1" : ""}`}
             >
