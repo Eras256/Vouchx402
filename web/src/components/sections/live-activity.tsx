@@ -2,7 +2,7 @@ import { LiveStats } from "./live-stats";
 import { RecentActivity } from "./recent-activity";
 
 // One nav entry ("Live activity") and one anchor id cover both the Live
-// stats and Recent activity feed sections from the IA — they're two
+// stats and Recent activity feed sections from the IA; they're two
 // distinct pieces of content but one destination to jump to.
 export function LiveActivity() {
   return (
