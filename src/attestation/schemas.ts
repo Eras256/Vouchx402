@@ -6,7 +6,7 @@ import { env, easSchemaUidFulfillment, easSchemaUidDispute, type NetworkName } f
 
 /**
  * x402-SAP schemas (docs/TECHNICAL_SPEC.md). Non-revocable: attestations
- * are meant to be an immutable record — a disagreement is a *new*, linked
+ * are meant to be an immutable record: a disagreement is a *new*, linked
  * X402ServiceDispute attestation, never a revocation of the original.
  */
 export const FULFILLMENT_SCHEMA =
