@@ -6,10 +6,10 @@ const clients = new Map<NetworkName, PublicClient>();
 
 /**
  * `mainnet.base.org` / `sepolia.base.org` are shared public RPCs fronted
- * by Cloudflare — observed returning transient 502s under normal use (see
+ * by Cloudflare, observed returning transient 502s under normal use (see
  * DECISION_LOG.md). viem's default retry budget (3 attempts) isn't always
  * enough to ride that out; this widens it. Still only a mitigation, not a
- * fix — the build-on-base skill's own guidance is a dedicated node
+ * fix: the build-on-base skill's own guidance is a dedicated node
  * provider for anything beyond local dev/testing.
  */
 export function httpTransport(url: string) {
@@ -46,7 +46,7 @@ export function defaultNetwork(): NetworkName {
   return env.network;
 }
 
-/** Minimal ERC-20 ABI — just what payment verification and scoring need. */
+/** Minimal ERC-20 ABI: just what payment verification and scoring need. */
 export const erc20Abi = [
   {
     type: "event",
