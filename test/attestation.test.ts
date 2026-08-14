@@ -25,7 +25,7 @@ describe("x402-SAP attestations (Base Sepolia)", () => {
   let baseUrl: string;
 
   beforeAll(async () => {
-    // Idempotent — reuses the already-registered UIDs from .env if present.
+    // Idempotent: reuses the already-registered UIDs from .env if present.
     await registerSchemas("base-sepolia");
 
     const app = createApp();
@@ -100,7 +100,7 @@ describe("x402-SAP attestations (Base Sepolia)", () => {
 
     // --- File a dispute against it, signed by the original payer ---
     const reasonCode = DisputeReasonCode.StaleData;
-    const details = "v0 flag list is intentionally empty — score is not a complete risk model.";
+    const details = "v0 flag list is intentionally empty: score is not a complete risk model.";
     const message = disputeMessage(fulfillBody.attestationUid, reasonCode, details);
     const signature = await account.signMessage({ message });
 
@@ -129,7 +129,7 @@ describe("x402-SAP attestations (Base Sepolia)", () => {
   }, 90_000);
 
   it("rejects a dispute whose signature doesn't match the fulfillment's payer", async () => {
-    // Reuse whatever fulfillment attestation UID we can find isn't required —
+    // Reuse whatever fulfillment attestation UID we can find isn't required:
     // an unrelated signer's signature must fail regardless of refUID
     // validity, since submitDispute checks the payer match before anything
     // schema-specific.
