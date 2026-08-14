@@ -1739,3 +1739,55 @@ recommendation in the Phase-1-era "Public RPC flakiness" entry above:
 still an infra choice for later, not a code fix, but now with a real
 mainnet dollar cost attached to it rather than only a Sepolia test
 inconvenience.
+
+## 2026-08-13: /pitch page, a real bug in Next.js metadata inheritance
+
+Added a public pitch page at `/pitch` (both locales), built for a
+specific real use: the user wanted a page to point a contact toward
+before that conversation happens, not a grant application. Followed
+the same content rule already governing this repo: no grant/funding
+mentions, no dollar amounts, no "this shows Base that..." framing.
+Every claim on the page is either sourced verbatim from
+`README.md`/`docs/TECHNICAL_SPEC.md` (the curl example, the "Known v0
+limitation" and "Roadmap" sections) or independently re-verified live
+before writing it, not carried over from memory: the two mainnet
+`basescan.org` tx links, both `base.easscan.org` schema links, the
+live `/v1/metrics` endpoint, `plugins/vouch402.md`, PR #152 (still
+open, no reviews, confirmed via `gh pr view` fresh), and all three npm
+package pages (`npm view` against the registry, not the bot-blocked
+npmjs.com frontend, same false-negative already documented at Gate 0,
+recalibrated again here against a known-real and a known-fake package
+side by side).
+
+Built from existing pieces, not a new visual language: the section
+shell, `Badge`, and numbered-step patterns from the homepage, the same
+`CodeBlock` the Docs page and API reference already use. Six focused
+components under `components/pitch/`, composed by
+`app/[locale]/pitch/page.tsx`. Content genuinely translated into
+Spanish (the general site convention), except the one embedded `curl`
+example, which stays English in both locales, same as the API
+reference section's own established rule for code content.
+
+**Wiring this page's own `generateMetadata` surfaced a real Next.js
+behavior worth recording, caught by checking the actual rendered
+`<head>` rather than trusting the code once it compiled.** A route's
+metadata export doesn't deep-merge nested objects like `openGraph`/
+`twitter` with the parent layout's: overriding just `{ title,
+description }` at the page level silently dropped the inherited
+`images`/`siteName`/`type`/`card` fields entirely, confirmed by curling
+the built page and finding `og:image`/`twitter:image` missing outright
+where the homepage has them. Fixed by fully re-specifying every field
+`generateMetadata` needs at the page level rather than assuming
+anything carries over from the layout. Re-verified: `/pitch` now
+serves its own accurate `og:title`/`og:description`
+(`https://www.vouch402.xyz/pitch`'s actual content, not the generic
+homepage copy) alongside the same real `opengraph-image.png`, correct
+`https://www.vouch402.xyz` absolute URL included.
+
+**Verified against a clean production build**: `tsc`/`eslint` clean;
+zero console errors across both locales at 375px and 1440px; every
+external link on the rendered page checked live (`HEAD` request or,
+for the three npm pages, the registry API given the known frontend
+false-negative), all resolving; dark mode confirmed correct via
+screenshot, matching the rest of the site since nothing page-specific
+was introduced to the theming.
