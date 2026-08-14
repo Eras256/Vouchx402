@@ -6,7 +6,7 @@ import { withAttribution } from "./attribution";
 
 /**
  * EAS is natively deployed on Base (and Base Sepolia) as an OP Stack
- * predeploy — the same address on both networks. Verified against Base's
+ * predeploy: the same address on both networks. Verified against Base's
  * own contract-address docs and the eas-contracts deployment manifests
  * for `base` and `base-sepolia` (both list this address), not guessed.
  */
@@ -19,7 +19,7 @@ export const SCHEMA_REGISTRY_ADDRESS = "0x42000000000000000000000000000000000000
  * call, then the very next `sendTransaction` (for the fulfillment
  * attestation, same address) reads "pending" nonce from a Cloudflare
  * backend node that hasn't caught up yet, computes an already-used nonce,
- * and the resend is rejected as `REPLACEMENT_UNDERPRICED` — observed live
+ * and the resend is rejected as `REPLACEMENT_UNDERPRICED`, observed live
  * against `sepolia.base.org` (see DECISION_LOG.md), not hypothetical.
  * Retrying re-triggers ethers' own nonce lookup from scratch each time,
  * which self-heals once propagation catches up.
@@ -40,7 +40,7 @@ async function withNonceRetry<T>(fn: () => Promise<T>, { retries = 4, delayMs = 
 
 /**
  * Every transaction Vouch402's own wallet sends goes through this signer
- * (schema registration, attestations) — overriding `sendTransaction` here
+ * (schema registration, attestations); overriding `sendTransaction` here
  * is the "client-level, not per-call" attribution point docs/TECHNICAL_SPEC.md
  * requires, without needing to reimplement what the EAS SDK builds
  * internally for each contract call.
@@ -56,7 +56,7 @@ class AttributedWallet extends EthersWallet {
 
 let cachedSigner: { network: NetworkName; signer: EthersWallet } | undefined;
 
-/** ethers Signer for the deployer wallet, connected to the given network — used for every attest/register call. */
+/** ethers Signer for the deployer wallet, connected to the given network: used for every attest/register call. */
 export function getEasSigner(network: NetworkName): EthersWallet {
   if (cachedSigner?.network === network) return cachedSigner.signer;
   const { privateKey } = loadDeployerAccount();
@@ -81,13 +81,13 @@ export function getSchemaRegistry(network: NetworkName): SchemaRegistry {
  * handled here:
  *  1. A read immediately after a write lands on a backend node that
  *     hasn't caught up yet and comes back with a zeroed/not-found struct
- *     even though the write already landed — confirmed by re-querying
+ *     even though the write already landed, confirmed by re-querying
  *     the same UID moments later.
- *  2. The request itself fails outright (a bare Cloudflare 502) — this
+ *  2. The request itself fails outright (a bare Cloudflare 502): this
  *     throws rather than returning a struct at all, so it needs its own
  *     catch, not just the not-found check above. Missed this the first
  *     time (only handled case 1) until `scripts/demo.ts` hit exactly this
- *     mid-run and the retry loop didn't catch it — see DECISION_LOG.md.
+ *     mid-run and the retry loop didn't catch it; see DECISION_LOG.md.
  */
 export async function getAttestationWithRetry(
   eas: EAS,
@@ -101,7 +101,7 @@ export async function getAttestationWithRetry(
         return attestation; // found, or exhausted retries on a possibly-genuine not-found
       }
     } catch (err) {
-      if (attempt >= retries) throw err; // exhausted retries — surface the real error
+      if (attempt >= retries) throw err; // exhausted retries: surface the real error
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
