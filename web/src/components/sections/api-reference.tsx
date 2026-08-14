@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/docs/code-block";
 import { API_BASE_URL } from "@/lib/vouch402";
 
-// Curl examples are code, not prose — kept in English regardless of site
+// Curl examples are code, not prose: kept in English regardless of site
 // language, same convention as the Docs page (see messages/*.json
 // "docs.sourceNote"). Verified against src/server/app.ts's actual request
 // handling, not guessed: the two-step 402 -> pay -> retry flow for
@@ -12,7 +12,7 @@ import { API_BASE_URL } from "@/lib/vouch402";
 const ENDPOINTS = [
   {
     key: "riskScore",
-    curl: `# 1. Ask without payment — get the exact x402 price + resourceId back as a 402
+    curl: `# 1. Ask without payment, get the exact x402 price + resourceId back as a 402
 curl ${API_BASE_URL}/v1/risk-score/0x53a79B109fa77c05B043e73A284a22b57c6263b0
 
 # 2. Pay the quoted USDC amount on-chain, then retry with proof of payment
