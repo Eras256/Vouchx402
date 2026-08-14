@@ -81,7 +81,7 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
     console.log(`[Phase 1] Base Sepolia payment tx: ${explorerBaseFor("base-sepolia")}/tx/${txHash}`);
 
     // writeContract returns as soon as the tx is submitted, not once it's
-    // mined — wait for a real confirmation before presenting proof, same
+    // mined; wait for a real confirmation before presenting proof, same
     // as a real agent would.
     const receipt = await publicClientFor("base-sepolia").waitForTransactionReceipt({ hash: txHash });
     expect(receipt.status).toBe("success");
@@ -121,7 +121,7 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
       headers: { "X-PAYMENT": xPayment },
     });
 
-    // Quote already consumed and/or tx hash already processed — either
+    // Quote already consumed and/or tx hash already processed; either
     // way, replay must be rejected, never a second 200.
     expect(res.status).toBe(402);
   });
