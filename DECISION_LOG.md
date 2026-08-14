@@ -1897,3 +1897,85 @@ correctly, not just zero-diff; a code block's own `scrollWidth`
 (603px) exceeding its `clientWidth` (341px) on a 375px viewport
 confirmed the internal scroll genuinely engages rather than the page
 itself scrolling; dark mode re-confirmed clean at 375px.
+
+## 2026-08-14: A real, custom logo, replacing the icon-library glyph
+
+Told plainly the shield-check mark (Lucide's own icon, filled and
+recolored) read as generic, not a real brand mark. Fair: it was
+someone else's icon shape, just recolored, not anything designed for
+this product. Designed something actually specific to Vouch402 this
+time, rather than picking a different icon library glyph and calling
+it done.
+
+**The concept**: the product's own defining number, not a borrowed
+trust/security pictogram. "Vouch402" exists because of HTTP 402; a
+shield-and-checkmark could belong to any security product, but "402"
+belongs to exactly this one. Built as a fluted seal/medallion (a
+circle whose radius is sine-modulated around its circumference, wax-
+seal/certification-rosette visual language, matching what an
+*attestation* service should look like, and deliberately not the
+hexagon-plus-checkmark combination that's genuinely overused across
+crypto branding) with "402" set inside in Geist Mono Black, the same
+monospace typeface this site already uses for every piece of on-chain
+data (`--font-mono` in `globals.css`). The mark and the site's own
+existing "this is real technical data" visual language now share one
+typeface, not two unrelated ones.
+
+**Iterated with real renders before choosing anything**, not from a
+single first attempt: generated the seal outline programmatically
+(Catmull-Rom spline through a sine-modulated radius, not hand-drawn
+bezier guesswork) and compared 8/10/12-flute versions side by side at
+200/48/32px; 10 flutes read as the most balanced, 8 felt closer to a
+generic "sale badge" burst, 12 started losing crispness at 32px. Also
+compared five different treatments for the smallest favicon context
+(full seal + "402", seal with no text, seal with a single bold "4", a
+plain circle with "4", a plain circle with "402") at actual 16px: only
+"plain circle + a single bold 4" stayed legible at that size, everything else
+including the full seal degraded to an indistinct blob. That's the
+real, deliberate reason the smallest favicon.ico frame doesn't match
+the full mark: not an oversight, a size-appropriate simplification,
+standard practice for icon systems and confirmed necessary here by
+actually rendering the alternatives rather than assuming one mark
+would scale to every context.
+
+**One real mistake worth recording honestly**: an early draft of the
+navbar `Logo` component had a hand-typed seal path that was never
+actually the tested, generated one; a transcription slip while
+copying numbers by hand. Caught before committing by re-reading the
+actual generated `seal-10.txt` file byte for byte rather than trusting
+memory of what I'd just written, and rewriting the component from
+that verified source. Worth naming because it's exactly the kind of
+error this project's own standing discipline exists to catch: verify
+against the real artifact, not what you assume you copied correctly.
+
+**Implementation**: the live navbar `Logo` renders real inline SVG +
+real `<text>` styled with `font-mono font-black` (Tailwind's mapping
+to this project's already-loaded Geist Mono variable font, weight
+900, confirmed present in the font's `100 900` variable range before
+relying on it). The standalone files needed a different approach since
+they're rasterized/loaded outside any React font-loading context:
+`apple-icon.png` and `opengraph-image.png` are rendered via a headless
+browser with the real Geist Mono Black font embedded (guaranteeing
+pixel-perfect text, baked once into the final PNG, no runtime font
+dependency at all), and `favicon.ico` packs three real PNG frames
+(48/32px full mark, 16px simplified single-digit glyph) into a
+standard PNG-in-ICO container, verified by parsing its own header back
+out. `icon.svg`, by contrast, deliberately does *not* embed the
+~150KB font: a bare SVG favicon is fetched by every browser on every
+visit, and a bold system monospace fallback stack (`ui-monospace,
+'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace`) is visually
+indistinguishable from the real typeface at favicon scale, confirmed
+by rendering it directly and comparing. The OG image's first draft
+also had the seal physically overlapping the "V" of the wordmark
+(a layout math error, scale and position computed independently
+without checking they'd actually fit); caught by looking at the
+rendered output, not assumed correct from the transform values alone,
+and fixed by recomputing the seal's actual pixel footprint before
+placing the text next to it.
+
+**Verified against a clean production build**: `tsc`/`eslint` clean,
+all four icon routes `200`, zero console errors and zero horizontal
+overflow across all three pages, both locales, six widths (the same
+sweep already built for the earlier overflow-fix entry, rerun here
+since the navbar's `Logo` size changed slightly), and both themes
+checked by screenshot.
