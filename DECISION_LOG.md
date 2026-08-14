@@ -1839,3 +1839,61 @@ console errors across both locales at 375px and 1440px, dark mode
 confirmed by screenshot (card elevation reads correctly in both
 themes), and all 14 external links re-checked live (same recalibrated
 npm 403 false-negative as before, everything else `200`).
+
+## 2026-08-14: Two real overflow bugs on the Docs page, one of them site-wide
+
+Asked to make the Docs page fully responsive with no horizontal
+overflow at mobile/tablet/desktop. Measured first rather than guessed:
+a script comparing `document.documentElement.scrollWidth` against
+`clientWidth` across 8 widths (375 to 1440px) times both locales found
+two real, distinct bugs.
+
+**Docs article stuck at a fixed ~740px regardless of viewport, below
+768px.** Root cause, found by inspecting the actual computed grid
+track size, not assumed: `grid-template-columns` was resolving to
+`739.609px` even though the grid's own class
+(`grid gap-12 lg:grid-cols-[1fr_240px]`) only sets an explicit
+template at `lg:` and above. CSS Grid items default to
+`min-width: auto`, meaning a grid item won't shrink below its
+content's own max-content size; `docs/TECHNICAL_SPEC.md`'s tables and
+code blocks (already correctly wrapped in `overflow-x-auto` divs in
+`markdown-components.tsx`, comment and all: *"wide content to scroll
+in its own container rather than ever forcing the page body to scroll
+horizontally"*) have a wide intrinsic content size, and without
+`min-width: 0` on the grid item containing them, that intrinsic width
+was leaking straight through the grid ancestor and blowing up the
+entire single-column mobile layout to ~740px. The `overflow-x-auto`
+wrapping was correct all along; it just never got the chance to work.
+Fixed with one class: `min-w-0` added to the `<article>` in
+`app/[locale]/docs/page.tsx`. This also fixed a second, related
+28px overflow on the `240px` TOC column at exactly 1024px, same root
+cause, different symptom.
+
+**Navbar overflow at 768px (both locales) and 820px (Spanish only),
+not specific to the Docs page.** Found while measuring Docs but
+present on every page, since `Navbar` is shared via the root layout:
+at exactly the `md:` breakpoint (768px), the full nav-links row and
+the language/network/theme selector row both switch on simultaneously
+while the mobile hamburger switches off, and the combined content
+(worse in Spanish: "Testnet" plus the longer button chrome doesn't
+compress the way English does) no longer fits in that width. This
+reads as a real regression against the Phase 7a entry's original
+claim of "individual selectors at 768px... without wrapping/overlap":
+whatever was true when that was written, a fresh measurement now shows
+it isn't anymore, and the fix follows the current measurement, not the
+old note. Fixed by moving all three `md:` breakpoints in `navbar.tsx`
+(nav links, selector row, mobile-menu trigger) to `lg:` (1024px),
+which already measured clean in both locales: the existing, already-
+verified `MobileMenu` now simply covers a wider range (up to 1023px)
+instead of introducing new UI.
+
+**Verified, not assumed, that a shared-component change didn't
+regress anything else**: a second script swept all three pages
+(home, Docs, `/pitch`) x 2 locales x 6 widths (375/768/820/1024/
+1280/1440), 36 combinations, checking both overflow and console
+errors. All 36 clean. Also spot-checked visually: the new `lg:`
+boundary at 1023px (compact) vs 1024px (full nav) both read
+correctly, not just zero-diff; a code block's own `scrollWidth`
+(603px) exceeding its `clientWidth` (341px) on a 375px viewport
+confirmed the internal scroll genuinely engages rather than the page
+itself scrolling; dark mode re-confirmed clean at 375px.

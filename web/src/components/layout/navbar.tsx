@@ -21,7 +21,7 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
-        <nav aria-label={t("home")} className="hidden items-center gap-1 md:flex">
+        <nav aria-label={t("home")} className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => (
             // nativeButton={false}: these render as <a>, not <button> — a
             // deliberate choice (they're navigation, not actions), not an
@@ -48,13 +48,13 @@ export function Navbar() {
           />
         </nav>
 
-        <div className="hidden items-center gap-0.5 md:flex">
+        <div className="hidden items-center gap-0.5 lg:flex">
           <LanguageSelector />
           <NetworkSelector />
           <ThemeSelector />
         </div>
 
-        <div className="md:hidden">
+        <div className="lg:hidden">
           <MobileMenu />
         </div>
       </div>

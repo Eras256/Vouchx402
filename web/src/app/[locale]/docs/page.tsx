@@ -36,7 +36,7 @@ export default function DocsPage() {
       </div>
 
       <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_240px]">
-        <article className="prose max-w-none prose-code:before:content-none prose-code:after:content-none">
+        <article className="prose min-w-0 max-w-none prose-code:before:content-none prose-code:after:content-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeSlug, rehypeHighlight]}
