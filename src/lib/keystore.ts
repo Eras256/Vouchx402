@@ -10,15 +10,15 @@ import { env } from "./env";
  * new`) and returns a raw private key plus a ready-to-use viem account.
  *
  * Two sources for the encrypted keystore JSON, checked in order:
- *  1. `DEPLOYER_KEYSTORE_JSON` — the keystore file's contents inline, as a
+ *  1. `DEPLOYER_KEYSTORE_JSON`: the keystore file's contents inline, as a
  *     Fly secret. Lets a deployed instance run without ever baking the
- *     keystore file (or the raw private key) into a Docker image layer —
+ *     keystore file (or the raw private key) into a Docker image layer;
  *     it's still encrypted ciphertext, useless without the password
  *     secret alongside it.
- *  2. `~/.foundry/keystores/<DEPLOYER_KEYSTORE_ACCOUNT>` — local dev, the
+ *  2. `~/.foundry/keystores/<DEPLOYER_KEYSTORE_ACCOUNT>`: local dev, the
  *     file `cast wallet new/import` writes directly.
  *
- * Either way, the private key only ever lives in process memory — never
+ * Either way, the private key only ever lives in process memory, never
  * logged, never written to disk. Never commit the password or the inline
  * JSON; both come from environment (gitignored `.env` locally, Fly
  * secrets in production).
