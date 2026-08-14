@@ -1,5 +1,5 @@
 # Vouch402 production image. node:sqlite needs Node 22.5+ (confirmed
-# working unflagged on Node 24 locally — see DECISION_LOG.md) so this
+# working unflagged on Node 24 locally, see DECISION_LOG.md) so this
 # pins the same major version rather than a generic LTS tag.
 
 FROM node:24-slim AS build
