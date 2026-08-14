@@ -16,11 +16,11 @@ export interface AttestFulfillmentParams {
   network: NetworkName;
   payer: string;
   payee: string;
-  /** bytes32 reference tying this attestation to the settled payment — the payment tx hash fits directly. */
+  /** bytes32 reference tying this attestation to the settled payment: the payment tx hash fits directly. */
   x402PaymentRef: string;
   resourceId: string;
   status: FulfillmentStatus;
-  /** The exact payload returned to the payer (attestationUid field excluded — see hashResponsePayload). */
+  /** The exact payload returned to the payer (attestationUid field excluded; see hashResponsePayload). */
   responsePayload: unknown;
 }
 
@@ -35,7 +35,7 @@ export function hashResponsePayload(payload: unknown): `0x${string}` {
 
 /**
  * Emits an X402ServiceFulfillment attestation immediately after a paid
- * request is fulfilled (or fails after payment was already verified) —
+ * request is fulfilled (or fails after payment was already verified),
  * see docs/TECHNICAL_SPEC.md "x402-SAP". Runs synchronously in the
  * request path (not fire-and-forget) because the resulting UID is part of
  * the response body the payer receives.
