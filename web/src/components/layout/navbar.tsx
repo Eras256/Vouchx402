@@ -23,7 +23,7 @@ export function Navbar() {
 
         <nav aria-label={t("home")} className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => (
-            // nativeButton={false}: these render as <a>, not <button> — a
+            // nativeButton={false}: these render as <a>, not <button>, a
             // deliberate choice (they're navigation, not actions), not an
             // oversight. Base UI's Button defaults to expecting a real
             // <button> and warns otherwise; this makes the choice explicit.
