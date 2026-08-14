@@ -40,7 +40,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Status colors — semantic, deliberately separate from --primary (the
+  /* Status colors: semantic, deliberately separate from --primary (the
      single Base-blue brand accent). Never reuse --primary for status. */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
@@ -58,15 +58,15 @@
 }
 
 /*
- * Base blue (#0052FF) is the single accent everywhere — Base's own brand
+ * Base blue (#0052FF) is the single accent everywhere: Base's own brand
  * color, and the network this product lives on. Same hex in both themes
- * (a fixed brand color, not something to re-tune per theme) — it's used
+ * (a fixed brand color, not something to re-tune per theme); it's used
  * as a solid fill with white text on top, so it doesn't need to adapt to
  * the surrounding page background the way a text color would.
  *
  * Neutrals are NOT pure gray: light mode carries a faint cool/blue tint
  * (oklch hue ~258, the same hue family as the accent, at very low
- * chroma), dark mode is a deep navy-black rather than true black — both
+ * chroma), dark mode is a deep navy-black rather than true black; both
  * picked so the accent feels native to the palette instead of dropped
  * onto a generic gray scale.
  */
@@ -168,7 +168,7 @@
     text-wrap: balance;
   }
   /* Anything that's a raw hex value, hash, address, or attestation UID
-     gets Geist Mono — a real functional distinction (scannable/copyable
+     gets Geist Mono: a real functional distinction (scannable/copyable
      data vs. prose), not decoration. Apply via the `font-mono` utility
      or the `.data` class at the call site. */
   .data {
@@ -178,7 +178,7 @@
     max-width: 65ch;
   }
   /* Every in-page anchor (nav links, the Docs TOC, heading permalinks)
-     targets an element with an id — offset the scroll landing so the
+     targets an element with an id; offset the scroll landing so the
      sticky navbar never covers it. */
   [id] {
     scroll-margin-top: 5rem;
@@ -192,7 +192,7 @@
  * Docs page's prose column on the same cool-tinted, non-gray palette as
  * the rest of the site. `--foreground`/`--muted-foreground`/etc. already
  * flip value under `.dark` (see the :root / .dark blocks above), so a
- * single set of --tw-prose-* values here covers both themes — no
+ * single set of --tw-prose-* values here covers both themes, no
  * separate --tw-prose-invert-* block or `dark:prose-invert` needed.
  */
 .prose {
@@ -216,7 +216,7 @@
 
 /*
  * rehype-highlight token colors, mapped onto this project's own design
- * tokens rather than an imported highlight.js theme stylesheet — so code
+ * tokens rather than an imported highlight.js theme stylesheet, so code
  * blocks stay consistent with both themes without a second palette to
  * maintain. @tailwindcss/typography handles prose layout (spacing,
  * headings, lists); it does not color `.hljs-*` token classes, so those
