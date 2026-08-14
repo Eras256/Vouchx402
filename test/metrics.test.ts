@@ -34,7 +34,7 @@ describe("GET /v1/metrics (Base Sepolia)", () => {
 
   it("reflects real counters that match the raw DB records", async () => {
     // Read /v1/metrics BEFORE, run one more real pay-and-fulfill cycle,
-    // read AFTER — every counter should move by exactly the expected
+    // read AFTER: every counter should move by exactly the expected
     // delta, not just "be nonzero".
     const before = await (await fetch(`${baseUrl}/v1/metrics`)).json();
 
@@ -80,7 +80,7 @@ describe("GET /v1/metrics (Base Sepolia)", () => {
       .reduce((sum, row) => sum + BigInt(row.amount_atomic), 0n);
     expect(BigInt(Math.round(Number(after.totalVolumeUsdc) * 1e6))).toBeGreaterThanOrEqual(0n); // sanity: parses as a number
     // Exact check: re-derive the atomic total from the human-readable field's own precision isn't safe
-    // (floating point) — instead confirm the raw DB sum itself is consistent with what we expect: it
+    // (floating point); instead confirm the raw DB sum itself is consistent with what we expect: it
     // must have grown by exactly this request's quoted amount.
     expect(rawVolume).toBeGreaterThanOrEqual(BigInt(requirement.maxAmountRequired));
 
