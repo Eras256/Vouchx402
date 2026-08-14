@@ -13,7 +13,7 @@ export function HowItWorks() {
           <p className="prose-column mt-3 text-muted-foreground">{t("subtitle")}</p>
         </div>
 
-        {/* A real, ordered process — numbering is functional here, not
+        {/* A real, ordered process: numbering is functional here, not
             decorative, per the design brief. */}
         <ol className="mt-12 space-y-8 sm:space-y-10">
           {STEP_KEYS.map((key, i) => (
