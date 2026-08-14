@@ -9,20 +9,20 @@ const server = app.listen(env.port, () => {
 });
 
 /**
- * Fly (and most PaaS) send SIGINT/SIGTERM on any auto-stop — scale-to-zero
+ * Fly (and most PaaS) send SIGINT/SIGTERM on any auto-stop: scale-to-zero
  * idling included, not just a real deploy/restart. Node's default
  * handling for those signals is an immediate process exit, which can cut
  * off a request mid-fulfillment: payment already verified and marked
  * processed, but the attestation/response never completes and the caller
  * gets nothing. Observed exactly this on the live Fly deployment (a
  * request killed mid-flight left a processed payment with no matching
- * fulfillment attestation) — not hypothetical. Draining in-flight
+ * fulfillment attestation), not hypothetical. Draining in-flight
  * requests before exiting is the fix; new connections stop being
  * accepted immediately, but work already underway gets to finish.
  */
 function gracefulShutdown(signal: string) {
   // eslint-disable-next-line no-console
-  console.log(`${signal} received — draining in-flight requests before exit`);
+  console.log(`${signal} received, draining in-flight requests before exit`);
   server.close(() => {
     // eslint-disable-next-line no-console
     console.log("All connections drained, exiting.");
