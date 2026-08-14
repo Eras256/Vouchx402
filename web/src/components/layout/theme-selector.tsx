@@ -17,7 +17,7 @@ export function ThemeSelector({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme();
   const t = useTranslations("selectors");
   // `theme` is typed `string | undefined` specifically because next-themes
-  // returns undefined until it's read localStorage client-side — using
+  // returns undefined until it's read localStorage client-side; using
   // that directly (rather than a second useState+useEffect just to track
   // "have we mounted yet") avoids an extra render pass and the
   // set-state-in-effect lint rule this project enforces.
