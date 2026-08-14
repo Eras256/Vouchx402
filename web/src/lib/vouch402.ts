@@ -1,4 +1,4 @@
-// Small, stable helpers mirroring src/lib/env.ts on the API side — this
+// Small, stable helpers mirroring src/lib/env.ts on the API side: this
 // is a separate npm project (no shared workspace/build step between the
 // two), so these are intentionally duplicated rather than imported.
 
@@ -12,7 +12,7 @@ export function toApiNetwork(uiNetwork: "testnet" | "mainnet"): ApiNetwork {
 }
 
 /** Verified live: both `base` and `base-sepolia` easscan.org subdomains
- * resolve to real attestations — see DECISION_LOG.md. */
+ * resolve to real attestations; see DECISION_LOG.md. */
 export function easExplorerUrl(network: ApiNetwork, uid: string): string {
   return `https://${network}.easscan.org/attestation/view/${uid}`;
 }
@@ -23,7 +23,7 @@ export function basescanTxUrl(network: ApiNetwork, txHash: string): string {
 
 // ---- Checkpoint 7c: Live stats + Recent activity ----
 // Mirrors src/lib/db.ts's real shapes (getMetrics/getRecentActivity) and
-// src/server/app.ts's actual response bodies — verified live against
+// src/server/app.ts's actual response bodies: verified live against
 // vouch402.fly.dev before wiring these up, not guessed.
 
 export interface Metrics {
@@ -77,7 +77,7 @@ export async function fetchActivity(
 }
 
 // ---- Checkpoint 7d: interactive demo ----
-// Mirrors src/server/x402.ts's real request/response shapes — verified
+// Mirrors src/server/x402.ts's real request/response shapes: verified
 // against that file directly (not guessed): the "exact-direct" scheme
 // (a real on-chain ERC-20 transfer + txHash proof, not EIP-3009/a
 // facilitator), the atomic-string amount convention, and the exact
@@ -113,13 +113,13 @@ export interface RiskScoreResult {
   attestationUid: string;
 }
 
-/** USDC is always 6 decimals — a hand-rolled atomic-to-decimal-string
+/** USDC is always 6 decimals: a hand-rolled atomic-to-decimal-string
  * conversion avoids pulling in viem just for this one function on the
  * frontend, which otherwise has no need for it. */
 export function formatUsdcAtomic(atomic: string): string {
   // BigInt literals (1_000_000n) need an ES2020+ target; this project's
   // tsconfig targets ES2017, so BigInt(1_000_000) (a runtime call, not a
-  // literal) is used instead — same value, no tsconfig change needed.
+  // literal) is used instead, same value, no tsconfig change needed.
   const divisor = BigInt(1_000_000);
   const value = BigInt(atomic);
   const whole = value / divisor;
@@ -127,7 +127,7 @@ export function formatUsdcAtomic(atomic: string): string {
   return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
-/** GET /v1/risk-score/:address with no payment proof — always returns
+/** GET /v1/risk-score/:address with no payment proof: always returns
  * the 402 quote (the resource is never released for free). */
 export async function fetchRiskScoreQuote(network: ApiNetwork, address: string): Promise<X402Requirement> {
   const res = await fetch(`${API_BASE_URL}/v1/risk-score/${address}`);
@@ -143,7 +143,7 @@ export async function fetchRiskScoreQuote(network: ApiNetwork, address: string):
 /** Retries GET /v1/risk-score/:address with proof of payment attached.
  * A freshly-settled payment can occasionally outrace Vouch402's own RPC
  * read of it (the same public-RPC-lag class of issue documented
- * elsewhere in DECISION_LOG.md) — retried a few times with a short delay
+ * elsewhere in DECISION_LOG.md), retried a few times with a short delay
  * on a 402 specifically, since that's the server's own "not confirmed
  * yet, retry shortly" signal, not a hard failure. */
 export async function fetchRiskScoreWithProof(
