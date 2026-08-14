@@ -22,13 +22,13 @@ const PAYMENT_POLL_MAX_ATTEMPTS = 20; // ~30s ceiling before surfacing an error
  *   2. @base-org/account's pay() -> a real on-chain USDC transfer via the
  *      user's Base Account, to the exact quoted payTo/amount (verified
  *      against src/server/x402.ts and pay()'s own source before wiring
- *      this up — pay() encodes a genuine ERC20 transfer() call via
+ *      this up: pay() encodes a genuine ERC20 transfer() call via
  *      wallet_sendCalls and returns the real settlement transaction
- *      hash as `id`, not an opaque userOp id — see DECISION_LOG.md)
+ *      hash as `id`, not an opaque userOp id; see DECISION_LOG.md)
  *   3. getPaymentStatus() polled until the transfer is confirmed, which
  *      is also the only place the payer's address is available (`sender`)
  *   4. GET /v1/risk-score/:address again, this time with the real
- *      { resourceId, txHash, payer } proof — Vouch402's own backend
+ *      { resourceId, txHash, payer } proof: Vouch402's own backend
  *      independently re-verifies this against the actual chain before
  *      releasing anything; nothing here is taken on faith.
  */
