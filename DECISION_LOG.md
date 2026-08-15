@@ -2307,6 +2307,15 @@ the code was right: `curl`'d `/en/docs` and confirmed the new
 `### Public results (makePublic)` section renders in the page's HTML
 (and its own ToC entry), and a Playwright screenshot of `/en#try-it`
 shows the new checkbox sitting between the address field and the Base
-Pay button, matching the existing input's styling. Local-only at this
-point — see whether this got pushed and deployed in the next entry
-before treating it as verified live.
+Pay button, matching the existing input's styling.
+
+Pushed (`200a2f2`) and confirmed live on the actual production domain,
+not just the code being right locally (the exact gap the "52 commits
+never pushed" entry above was about): watched Vercel's GitHub-triggered
+build reach `Ready` via `npx vercel ls`, then `curl`'d
+`https://www.vouch402.xyz/en/docs` directly and found the "Public
+results (makePublic)" heading in the response, and took real Playwright
+screenshots of both `https://www.vouch402.xyz/en/docs` (new subsection
++ ToC entry render) and `https://www.vouch402.xyz/en#try-it` (checkbox
+renders between the address input and the Base Pay button, label reads
+correctly).
