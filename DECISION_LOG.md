@@ -2128,3 +2128,51 @@ own, it's a pure client-side render of this exact `/v1/activity` JSON
 with no other data path, so the API-level verification above is
 authoritative for what a visitor can see. `tsc --noEmit` clean on
 both projects throughout.
+
+## 2026-08-15: The "publicResult doesn't render" bug wasn't in the component: 52 commits had never been pushed
+
+The user reported that `recent-activity.tsx` wasn't showing
+`publicResult` on the live site, despite `/v1/activity` returning it
+(confirmed via `curl`). Read `recent-activity.tsx` directly first
+rather than assuming the report was right or wrong: the
+`PublicResultLine` component from the previous entry was already
+there, correctly gated on `item.kind === "fulfillment" && item.publicResult`.
+The component was not the bug.
+
+`git status` explained it instead: local `master` was **52 commits
+ahead of `origin/master`**, going back to the very start of this
+session. Every `flyctl deploy` this session deployed the API
+correctly (Fly deploys straight from local source), which is why
+every prior "verified live" claim about the API was genuinely true.
+But the web frontend deploys via Vercel's GitHub integration, which
+builds from `origin/master`, and nothing had been `git push`ed all
+session. The live site was running a build from before the entire
+dev-wallet/public-result feature, and several other things built this
+session, existed. Confirmed directly: `npx vercel ls` showed the
+prior production deployment was 7 hours old, well before any of this
+session's frontend work.
+
+This is exactly the gap the user flagged in the previous entry's
+verification, made concrete: "the API response is authoritative for
+what a visitor sees" conflates two different claims. The data being
+correct and available says nothing about whether a given deployment
+actually contains the code that reads it. Checking the API confirms
+the *backend* is live; it says nothing about whether the *frontend*
+is.
+
+Pushed all 52 commits (user confirmed first, given the scope: this
+wasn't just today's fix, it was the accumulated work of the whole
+session going out at once). Vercel's GitHub integration picked it up
+automatically; confirmed via `npx vercel ls` that a new production
+build started immediately and reached `Ready`.
+
+**Verified with a real rendered screenshot of the live page this
+time, not just the API**: `npx playwright screenshot --full-page
+--wait-for-timeout 6000 https://www.vouch402.xyz/en`, waited past the
+client-side `/v1/activity` fetch (the component is `"use client"` and
+fetches after mount, so the initial HTML alone would prove nothing
+either), then read the resulting image directly. The dev wallet's row
+in Recent Activity shows, on screen, beneath the "Fulfilled" badge:
+"Scored 0x53a79b10...7c6263b0 64/100 2d 26 txs 3 contracts". The
+throwaway wallet's row from the earlier verification round (no
+`makePublic`) shows no such line, same as every other non-public row.
