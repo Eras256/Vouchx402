@@ -4,10 +4,11 @@ import { defaultNetwork } from "../lib/chain";
 import { computeRiskScore } from "../scoring/score";
 import { issueQuote, decodePaymentHeader } from "./x402";
 import { verifyPayment, PaymentVerificationError } from "./payment";
-import { recordRequestServed, getMetrics, getRecentActivity } from "../lib/db";
+import { recordRequestServed, recordPublicResult, getMetrics, getRecentActivity } from "../lib/db";
 import { attestFulfillment, FulfillmentStatus } from "../attestation/middleware";
 import { submitDispute, DisputeError, DisputeReasonCode } from "../attestation/dispute";
 import { easExplorerAttestationUrl, type NetworkName } from "../lib/env";
+import { DEV_WALLET_ADDRESS } from "../constants/devWallet";
 
 function isNetworkName(v: unknown): v is NetworkName {
   return v === "base" || v === "base-sepolia";
@@ -130,6 +131,20 @@ export function createApp(): Express {
         score,
         network,
       });
+
+      // Public by default only for the team's own dev wallet; every
+      // other payer stays attestation-only unless they explicitly set
+      // makePublic on their X-PAYMENT payload. See DECISION_LOG.md.
+      const isDevWallet = verified.payer.toLowerCase() === DEV_WALLET_ADDRESS.toLowerCase();
+      if (isDevWallet || proof.makePublic) {
+        recordPublicResult({
+          attestationUid,
+          address: address.toLowerCase(),
+          score,
+          signals,
+          network,
+        });
+      }
 
       res.status(200).json({ ...responsePayload, attestationUid });
     } catch (err) {

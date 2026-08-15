@@ -149,6 +149,14 @@
       "1": "Malformed response",
       "2": "Stale data",
       "3": "Other"
+    },
+    "publicResult": {
+      "scoredAddress": "Scored {address}",
+      "score": "{score}/100",
+      "age": "{days}d",
+      "txCount": "{count} txs",
+      "contracts": "{count} contracts",
+      "flagged": "flagged"
     }
   },
   "pitch": {

@@ -37,6 +37,17 @@ export interface Metrics {
 export type FulfillmentStatusCode = 0 | 1 | 2;
 export type DisputeReasonCode = 0 | 1 | 2 | 3;
 
+export interface PublicResult {
+  address: string;
+  score: number;
+  signals: {
+    walletAgeDays: number;
+    txCount: number;
+    uniqueContractInteractions: number;
+    flagged: boolean;
+  };
+}
+
 export type ActivityItem =
   | {
       kind: "fulfillment";
@@ -47,6 +58,10 @@ export type ActivityItem =
       network: ApiNetwork;
       createdAt: number;
       explorerUrl: string;
+      /** Only present for the dev wallet or a payer who opted in via
+       * makePublic; see DECISION_LOG.md. Absent for everyone else, not
+       * just hidden client-side. */
+      publicResult?: PublicResult;
     }
   | {
       kind: "dispute";

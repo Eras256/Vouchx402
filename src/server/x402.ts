@@ -80,6 +80,15 @@ export interface PaymentProof {
   resourceId: string;
   txHash: string;
   payer: string;
+  /**
+   * Opt-in only: makes this specific result (address, score, signals)
+   * visible on the public activity feed. Defaults to private (see
+   * DECISION_LOG.md "dev wallet / opt-in public results") regardless of
+   * what the client sends unless this is the literal boolean `true`, so
+   * a truthy-but-wrong value (a string, a typo) can never accidentally
+   * publish someone's result.
+   */
+  makePublic?: boolean;
 }
 
 /** Decodes the `X-PAYMENT` header: base64 JSON, per x402 convention. */
@@ -89,5 +98,5 @@ export function decodePaymentHeader(headerValue: string): PaymentProof {
   if (!parsed.resourceId || !parsed.txHash || !parsed.payer) {
     throw new Error("Malformed X-PAYMENT header: expected { resourceId, txHash, payer }");
   }
-  return parsed;
+  return { ...parsed, makePublic: parsed.makePublic === true };
 }

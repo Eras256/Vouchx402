@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 import { env } from "./env";
+import type { RiskSignals } from "../scoring/score";
 
 /**
  * Local persistence for Vouch402. Uses Node's built-in `node:sqlite`
@@ -81,6 +82,21 @@ function migrate(database: DatabaseSync) {
       ref_uid         TEXT NOT NULL,
       disputant       TEXT NOT NULL,
       reason_code     INTEGER NOT NULL,
+      network         TEXT NOT NULL,
+      created_at      INTEGER NOT NULL
+    );
+
+    -- Full { address, score, signals } for a fulfillment, kept
+    -- separate from attestations on purpose (see DECISION_LOG.md
+    -- "dev wallet / opt-in public results"): a row only ever exists
+    -- here for the dev wallet or a payer who explicitly opted in via
+    -- makePublic, so there is structurally nothing to leak for anyone
+    -- else, no display-time filter to get wrong.
+    CREATE TABLE IF NOT EXISTS public_results (
+      attestation_uid TEXT PRIMARY KEY,
+      address         TEXT NOT NULL,
+      score           INTEGER NOT NULL,
+      signals         TEXT NOT NULL,
       network         TEXT NOT NULL,
       created_at      INTEGER NOT NULL
     );
@@ -229,6 +245,26 @@ export function recordAttestation(params: { uid: string; status: number; payer: 
     .run(params.uid, params.status, params.payer, params.payee, params.network, Date.now());
 }
 
+/**
+ * Only ever called for the dev wallet or a payer who set `makePublic`
+ * on their X-PAYMENT payload (see src/server/app.ts). `signals` is
+ * stored as a JSON string since node:sqlite has no native JSON column;
+ * parsed back out in getRecentActivity().
+ */
+export function recordPublicResult(params: {
+  attestationUid: string;
+  address: string;
+  score: number;
+  signals: RiskSignals;
+  network: string;
+}) {
+  getDb()
+    .prepare(
+      `INSERT INTO public_results (attestation_uid, address, score, signals, network, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(params.attestationUid, params.address, params.score, JSON.stringify(params.signals), params.network, Date.now());
+}
+
 export function recordDispute(params: {
   uid: string;
   refUid: string;
@@ -308,6 +344,7 @@ export type ActivityItem =
       payee: string;
       network: string;
       createdAt: number;
+      publicResult?: { address: string; score: number; signals: RiskSignals };
     }
   | {
       kind: "dispute";
@@ -327,19 +364,34 @@ export type ActivityItem =
  */
 export function getRecentActivity(network?: string, limit = 20): ActivityItem[] {
   const database = getDb();
-  const where = network ? `WHERE network = ?` : "";
+  const fulfillmentsWhere = network ? `WHERE a.network = ?` : "";
+  const disputesWhere = network ? `WHERE network = ?` : "";
   const args = network ? [network, limit] : [limit];
 
   const fulfillments = database
     .prepare(
-      `SELECT uid, status, payer, payee, network, created_at FROM attestations ${where}
-       ORDER BY created_at DESC LIMIT ?`
+      `SELECT a.uid, a.status, a.payer, a.payee, a.network, a.created_at,
+              p.address as result_address, p.score as result_score, p.signals as result_signals
+       FROM attestations a
+       LEFT JOIN public_results p ON p.attestation_uid = a.uid
+       ${fulfillmentsWhere}
+       ORDER BY a.created_at DESC LIMIT ?`
     )
-    .all(...args) as { uid: string; status: number; payer: string; payee: string; network: string; created_at: number }[];
+    .all(...args) as {
+    uid: string;
+    status: number;
+    payer: string;
+    payee: string;
+    network: string;
+    created_at: number;
+    result_address: string | null;
+    result_score: number | null;
+    result_signals: string | null;
+  }[];
 
   const disputes = database
     .prepare(
-      `SELECT uid, ref_uid, disputant, reason_code, network, created_at FROM disputes ${where}
+      `SELECT uid, ref_uid, disputant, reason_code, network, created_at FROM disputes ${disputesWhere}
        ORDER BY created_at DESC LIMIT ?`
     )
     .all(...args) as {
@@ -360,6 +412,10 @@ export function getRecentActivity(network?: string, limit = 20): ActivityItem[] 
       payee: f.payee,
       network: f.network,
       createdAt: f.created_at,
+      publicResult:
+        f.result_address !== null && f.result_score !== null && f.result_signals !== null
+          ? { address: f.result_address, score: f.result_score, signals: JSON.parse(f.result_signals) as RiskSignals }
+          : undefined,
     })),
     ...disputes.map((d) => ({
       kind: "dispute" as const,

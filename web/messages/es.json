@@ -149,6 +149,14 @@
       "1": "Respuesta malformada",
       "2": "Datos desactualizados",
       "3": "Otro"
+    },
+    "publicResult": {
+      "scoredAddress": "Evaluada {address}",
+      "score": "{score}/100",
+      "age": "{days}d",
+      "txCount": "{count} tx",
+      "contracts": "{count} contratos",
+      "flagged": "marcada"
     }
   },
   "pitch": {

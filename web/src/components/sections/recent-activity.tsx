@@ -21,38 +21,58 @@ const STATUS_STYLE: Record<FulfillmentStatusCode, string> = {
 };
 const DISPUTE_STYLE = "border-warning/30 bg-warning/10 text-warning";
 
+function PublicResultLine({ result }: { result: NonNullable<Extract<ActivityItem, { kind: "fulfillment" }>["publicResult"]> }) {
+  const t = useTranslations("recentActivity");
+  const { address, score, signals } = result;
+
+  return (
+    <div className="data mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+      <span>{t("publicResult.scoredAddress", { address: truncateHex(address) })}</span>
+      <span>{t("publicResult.score", { score })}</span>
+      <span>{t("publicResult.age", { days: signals.walletAgeDays })}</span>
+      <span>{t("publicResult.txCount", { count: signals.txCount })}</span>
+      <span>{t("publicResult.contracts", { count: signals.uniqueContractInteractions })}</span>
+      {signals.flagged ? <span>{t("publicResult.flagged")}</span> : null}
+    </div>
+  );
+}
+
 function ActivityRow({ item, locale }: { item: ActivityItem; locale: string }) {
   const t = useTranslations("recentActivity");
   const time = formatRelativeTime(item.createdAt, locale);
 
   return (
-    <li className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-      <div className="flex min-w-0 items-center gap-3">
-        {item.kind === "fulfillment" ? (
-          <Badge variant="outline" className={STATUS_STYLE[item.status]}>
-            {t(`fulfillmentStatus.${item.status}`)}
-          </Badge>
-        ) : (
-          <Badge variant="outline" className={DISPUTE_STYLE}>
-            {t(`disputeReason.${item.reasonCode}`) /* label reused as the row's headline reason */}
-          </Badge>
-        )}
-        <span className="data truncate text-sm text-foreground">
-          {item.kind === "fulfillment" ? truncateHex(item.payer) : truncateHex(item.disputant)}
-        </span>
+    <li className="flex flex-col gap-1 border-b border-border py-3.5 last:border-b-0">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {item.kind === "fulfillment" ? (
+            <Badge variant="outline" className={STATUS_STYLE[item.status]}>
+              {t(`fulfillmentStatus.${item.status}`)}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className={DISPUTE_STYLE}>
+              {t(`disputeReason.${item.reasonCode}`) /* label reused as the row's headline reason */}
+            </Badge>
+          )}
+          <span className="data truncate text-sm text-foreground">
+            {item.kind === "fulfillment" ? truncateHex(item.payer) : truncateHex(item.disputant)}
+          </span>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-4">
+          <span className="text-xs whitespace-nowrap text-muted-foreground">{time}</span>
+          <a
+            href={item.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs whitespace-nowrap text-primary hover:underline"
+          >
+            {t("viewOnExplorer")}
+          </a>
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-4">
-        <span className="text-xs whitespace-nowrap text-muted-foreground">{time}</span>
-        <a
-          href={item.explorerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs whitespace-nowrap text-primary hover:underline"
-        >
-          {t("viewOnExplorer")}
-        </a>
-      </div>
+      {item.kind === "fulfillment" && item.publicResult ? <PublicResultLine result={item.publicResult} /> : null}
     </li>
   );
 }

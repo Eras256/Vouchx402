@@ -2056,3 +2056,75 @@ unread by any code path now) rather than deleted, in case the paid
 tier is reconsidered later; the corresponding Fly secret was likewise
 left in place, unread and harmless. Neither was ever printed in a
 commit, log, or reply.
+
+## 2026-08-15: Dev wallet shows full results by default; everyone else stays attestation-only unless they opt in
+
+Previously, `/v1/activity` (the public live feed) never exposed a
+scored address's actual `score`/`signals` for anyone, dev wallet
+included: it only ever returned `payer`/`payee`/`status`/`network`,
+never the address being scored or its result. The user asked for the
+opposite split from what might be assumed: full results public by
+default for the team's own dev/test wallet
+(`0x53a79B109fa77c05B043e73A284a22b57c6263b0`, see
+`src/constants/devWallet.ts`), and attestation-only by default for
+everyone else, with an explicit opt-in to go public.
+
+**Why this split, not "always show everything" or "never show
+anything"**: the real expected use case is an agent paying to score a
+*third party's* address before transacting with them. If that
+address and score sat on the public feed permanently by default, two
+problems follow: the payer's own query pattern becomes public (which
+addresses is this agent vetting, and when), and a third party gets a
+public, permanent risk judgment attached to their address without
+ever consenting to be scored publicly. That would work against real
+customer adoption, not for it. The dev wallet has neither problem:
+it's the team's own address, and its results have been used as public
+proof-of-concept data throughout this project already (Hero section,
+`DECISION_LOG.md` itself).
+
+**Mechanism**: a new `public_results` table (`src/lib/db.ts`), keyed
+by attestation UID, storing `{ address, score, signals }`. Rows only
+ever get inserted for the dev wallet or a payer who set
+`makePublic: true` on their `X-PAYMENT` payload (extended
+`PaymentProof` in `src/server/x402.ts`, strictly coerced to the
+literal boolean `true` so a typo or truthy string can never
+accidentally publish someone's result). `getRecentActivity()` LEFT
+JOINs against this table; the field is simply absent from the
+response for anyone not eligible, not filtered at display time. Kept
+deliberately separate from the `attestations` table (and the
+attestation/hash mechanism itself is untouched: the on-chain
+attestation still hashes and records the same full response for
+every request, public or not) so there is structurally nothing to
+leak for an ineligible request, no display-time check to get wrong.
+The CLI/SDK don't expose `makePublic` yet: only the protocol-level
+mechanism was built, since publishing a new CLI/SDK version wasn't
+part of what was asked here.
+
+**Verified live against production, both directions, with real
+on-chain payments, not assumed safe from reading the code**:
+
+- Dev wallet, no `makePublic` set (its normal, unmodified call
+  pattern): real mainnet payment via the published CLI, then queried
+  `GET /v1/activity?network=base` directly. The resulting item
+  carries `"publicResult":{"address":"0x53a79b...","score":64,
+  "signals":{"walletAgeDays":2,"txCount":26,
+  "uniqueContractInteractions":3,"flagged":false}}`.
+- A freshly generated, previously-unused throwaway wallet
+  (`0xE9db998a7bC7F46792E31d0C6676Dd3C9FFE8Eaa`, funded with real
+  mainnet ETH/USDC from the deployer wallet specifically for this
+  test), paying with `makePublic: false` explicitly set (the same
+  state as not setting it at all): real mainnet payment, then the
+  same live `GET /v1/activity?network=base` query. That item has no
+  `publicResult` key at all, confirmed by inspecting the raw JSON
+  directly, not inferred from the frontend not rendering it.
+- Also ran the same two-wallet check locally against Base Sepolia
+  first (a fresh throwaway key, real testnet payments) before
+  spending real mainnet funds, to catch any bug cheaply; it passed
+  identically there too.
+
+Didn't additionally drive the live page in a browser for this pass:
+the frontend (`recent-activity.tsx`) has no server-side logic of its
+own, it's a pure client-side render of this exact `/v1/activity` JSON
+with no other data path, so the API-level verification above is
+authoritative for what a visitor can see. `tsc --noEmit` clean on
+both projects throughout.
