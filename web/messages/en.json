@@ -224,6 +224,20 @@
         "pluginLink": "View the plugin file",
         "prLink": "View the pull request"
       },
+      "contributions": {
+        "title": "Found & reported upstream",
+        "subtitle": "Two real issues found in dependencies this project actually calls, both public and independently verifiable. Not equivalent in kind: one is a security finding, the other a docs/UX bug.",
+        "securityLabel": "Security finding",
+        "docsLabel": "Docs/UX bug",
+        "easSdk": {
+          "link": "eas-sdk#132",
+          "description": "eas-sdk's receipt-parsing helpers match event logs by signature only, not by which contract emitted them, so a schema's resolver can inject a forged UID into multiAttest()'s result. Vouch402 itself isn't exposed: no resolver, no multiAttest() calls."
+        },
+        "foundry": {
+          "link": "foundry-rs/foundry#16209",
+          "description": "cast wallet new <name> fails with a bare account name, unlike cast wallet import <name>, which saves to the default keystore directory the same way. The tracking issue for this exact gap had been closed as completed against a fix that didn't cover it. This project's own CLI docs had documented the broken command and needed fixing too."
+        }
+      },
       "packages": {
         "title": "npm packages",
         "sdk": "TypeScript client library: getQuote, pay, fetchScore, verifyAttestation.",
