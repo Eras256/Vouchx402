@@ -55,6 +55,19 @@ result. Vouch402 itself isn't affected (no resolver, no `multiAttest()`
 calls) — this is a library-level finding reported upstream, not a gap
 in this project.
 
+Separately, and of a different, lower-stakes kind — a docs/UX bug, not
+a security finding: while working with `foundry-rs/foundry`'s `cast`
+(the keystore tooling `src/lib/keystore.ts` and `cli/src/keystore.ts`
+both decrypt), found that `cast wallet new <name>` fails with a bare
+account name, unlike `cast wallet import <name>`, which saves to the
+default keystore directory the same way. The tracking issue for this
+exact inconsistency, foundry-rs/foundry#11147, had already been closed
+as "completed" against a fix that only covers a different case. Filed
+[foundry-rs/foundry#16209](https://github.com/foundry-rs/foundry/issues/16209)
+with the repro and the diff-level explanation of the gap. Concretely
+real for this project too, not just upstream: `cli/README.md` documented
+the broken command form and had to be fixed to the working one.
+
 ## How it works
 
 ```
