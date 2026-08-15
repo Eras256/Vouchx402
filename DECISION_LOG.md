@@ -2319,3 +2319,39 @@ screenshots of both `https://www.vouch402.xyz/en/docs` (new subsection
 + ToC entry render) and `https://www.vouch402.xyz/en#try-it` (checkbox
 renders between the address input and the Base Pay button, label reads
 correctly).
+
+## 2026-08-15: README stale claim ("none published to npm yet") and repo metadata pointing at the wrong URL
+
+Two inaccuracies found by checking the live repo/registry directly with
+`gh`/`npm view`, not by reading the README in isolation:
+
+1. `README.md`'s "Client packages" section still said "none published to
+   npm yet," left over from before the 0.2.0 publish
+   (`d05125e`/earlier entries). `npm view vouch402-sdk version` /
+   `vouch402` / `vouch402-mcp-server` all confirmed `0.2.0` live on the
+   registry before touching the file. Replaced the claim with install
+   commands (`npm install vouch402-sdk`, `npx vouch402 score <address>`)
+   and links to each package's npm page.
+2. The README's "Live" link only pointed at the bare API
+   (`vouch402.fly.dev`); the actual product (Docs, Try It demo, live
+   activity feed) at `https://www.vouch402.xyz` was never mentioned.
+   Made that the lead "Live" link, kept `fly.dev` as a secondary
+   "direct API" reference (the "Try it" curl section further down still
+   targets `fly.dev` on purpose — that section is about the raw API, not
+   the site). Also added a one-line `web/` entry to the Architecture
+   section, matching the treatment `cli/`/`sdk/`/`mcp-server/` already
+   get, since it was the one top-level directory with no mention at all.
+
+Separately, the repo's GitHub "About" homepage field (metadata, not the
+README) still read `vouch402.vercel.app`, a stale Vercel preview domain
+from before the custom domain was wired up. Fixed via
+`gh repo edit --homepage https://www.vouch402.xyz`.
+
+**Verified live, not just committed locally** (the same "pushing isn't
+optional" lesson as the "52 commits never pushed" entry above): pushed
+to `master`, then `gh api repos/Eras256/Vouchx402/readme` (GitHub's own
+rendered-README API, not a local `git show`) confirmed the fetched
+content contains "all published on npm at `0.2.0`" and no remaining
+"none published to npm yet" string; `gh repo view Eras256/Vouchx402
+--json homepageUrl` confirmed `https://www.vouch402.xyz`, not the old
+`vercel.app` value.

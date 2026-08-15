@@ -3,7 +3,8 @@
 x402-metered on-chain risk intelligence for autonomous agents on Base,
 with a built-in proof-of-fulfillment attestation layer (x402-SAP).
 
-Live: **https://vouch402.fly.dev** (Base mainnet)
+Live: **https://www.vouch402.xyz** (Docs, the Try It demo, and the live
+activity feed) — direct API: **https://vouch402.fly.dev** (Base mainnet)
 
 See [docs/TECHNICAL_SPEC.md](docs/TECHNICAL_SPEC.md) for the full spec.
 Also available as a Base MCP plugin (or will be, once the upstream
@@ -11,13 +12,16 @@ Also available as a Base MCP plugin (or will be, once the upstream
 
 ## Client packages
 
-Three thin wrappers over this same API, none published to npm yet
+Three thin wrappers over this same API, all published on npm at `0.2.0`
 (see `DECISION_LOG.md` for status):
 
-- [`sdk/`](sdk): `vouch402-sdk`, a TypeScript client library.
-- [`cli/`](cli): `vouch402`, `vouch402 score <address>` from a terminal.
-- [`mcp-server/`](mcp-server): `vouch402-mcp-server`, a standalone MCP
-  server. Never holds a wallet; see its README for why.
+- [`sdk/`](sdk): [`vouch402-sdk`](https://www.npmjs.com/package/vouch402-sdk),
+  a TypeScript client library. `npm install vouch402-sdk`.
+- [`cli/`](cli): [`vouch402`](https://www.npmjs.com/package/vouch402),
+  `npx vouch402 score <address>` from a terminal.
+- [`mcp-server/`](mcp-server):
+  [`vouch402-mcp-server`](https://www.npmjs.com/package/vouch402-mcp-server),
+  a standalone MCP server. Never holds a wallet; see its README for why.
 
 ## Live on Base mainnet
 
@@ -89,6 +93,10 @@ network is configured in `.env`, using a funded local wallet. See
   `DECISION_LOG.md`), SQLite persistence (`node:sqlite`, no native
   build step), the EAS/ethers signer (Builder-Code-attributed at the
   client level), Foundry-keystore decryption.
+- [`web/`](web): the Next.js frontend deployed at
+  https://www.vouch402.xyz (Docs page, the live Try It demo, the
+  activity feed) — a pure client of the API above, no server-side
+  logic of its own.
 
 ## Local development
 
