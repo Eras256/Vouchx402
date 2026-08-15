@@ -6,10 +6,15 @@ function printHelp(): void {
   console.log(`vouch402: evaluate an address's Vouch402 risk score
 
 Usage:
-  vouch402 score <address> [--base-url <url>]
+  vouch402 score <address> [--base-url <url>] [--public]
 
 Pays for and fetches a live risk score for a Base address, then
 independently verifies the resulting attestation on EAS.
+
+  --public   Make this result visible on Vouch402's public activity
+             feed (address, score, and signals). Off by default:
+             the result stays attestation-only, same as before this
+             flag existed.
 
 Requires a funded wallet, loaded from a Foundry keystore (never a raw
 private key):
@@ -19,12 +24,13 @@ private key):
 `);
 }
 
-function parseArgs(argv: string[]): { address?: string; baseUrl?: string } {
+function parseArgs(argv: string[]): { address?: string; baseUrl?: string; makePublic: boolean } {
   const [, address] = argv;
   let baseUrl: string | undefined;
   const flagIndex = argv.indexOf("--base-url");
   if (flagIndex !== -1) baseUrl = argv[flagIndex + 1];
-  return { address, baseUrl };
+  const makePublic = argv.includes("--public");
+  return { address, baseUrl, makePublic };
 }
 
 async function main(): Promise<void> {
@@ -41,7 +47,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const { address, baseUrl } = parseArgs(["score", ...rest]);
+  const { address, baseUrl, makePublic } = parseArgs(["score", ...rest]);
   if (!address) {
     console.error("Usage: vouch402 score <address>\n");
     process.exit(1);
@@ -50,7 +56,7 @@ async function main(): Promise<void> {
   const account = loadKeystoreAccount();
   console.log(`Paying from ${account.address}...`);
 
-  const result = await getRiskScore(address, account, { baseUrl });
+  const result = await getRiskScore(address, account, { baseUrl, makePublic });
 
   console.log("");
   console.log(`Address:         ${result.address}`);

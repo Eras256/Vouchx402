@@ -37,11 +37,14 @@ raw) key for exactly that single-user, run-it-yourself case.
 - **`get_payment_quote(address, baseUrl?)`**: returns the unsigned x402
   payment requirements for scoring `address` (amount, asset, `payTo`,
   network). Pay it yourself, with your own wallet.
-- **`fetch_risk_score(address, quote, txHash, payer, baseUrl?)`**:
+- **`fetch_risk_score(address, quote, txHash, payer, baseUrl?, makePublic?)`**:
   takes the quote you got back and the transaction hash of your
   payment, retries until the server confirms it, then independently
   resolves the resulting attestation against EAS directly (not the
-  API's own claim) before returning the score.
+  API's own claim) before returning the score. `makePublic` (default
+  `false`) opts this specific result into Vouch402's public activity
+  feed (address, score, and signals shown in full); otherwise the
+  result stays attestation-only, same as before this option existed.
 
 ## Usage
 

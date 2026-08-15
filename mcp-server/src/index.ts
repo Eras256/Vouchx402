@@ -31,7 +31,7 @@ function errorResult(message: string) {
   return { content: [{ type: "text" as const, text: message }], isError: true };
 }
 
-const server = new McpServer({ name: "vouch402", version: "0.1.0" });
+const server = new McpServer({ name: "vouch402", version: "0.2.0" });
 
 server.registerTool(
   "get_payment_quote",
@@ -69,11 +69,17 @@ server.registerTool(
       txHash: z.string().describe("The transaction hash of the on-chain payment you submitted"),
       payer: z.string().describe("The address that sent the payment"),
       baseUrl: z.string().optional().describe("Override the Vouch402 API base URL, must match the one used for the quote"),
+      makePublic: z
+        .boolean()
+        .optional()
+        .describe(
+          "Make this result visible on Vouch402's public activity feed (address, score, and signals). Defaults to false: the result stays attestation-only."
+        ),
     },
   },
-  async ({ address, quote, txHash, payer, baseUrl }) => {
+  async ({ address, quote, txHash, payer, baseUrl, makePublic }) => {
     try {
-      const result = await fetchScore(address, quote as X402Requirement, txHash, payer, { baseUrl });
+      const result = await fetchScore(address, quote as X402Requirement, txHash, payer, { baseUrl, makePublic });
       // verifyAttestation only returns once it resolves a real, non-zero
       // attester on EAS (its own retry loop guards against a false
       // "not found" from public-RPC read-after-write lag); reaching this

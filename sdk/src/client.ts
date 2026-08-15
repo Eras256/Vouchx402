@@ -66,6 +66,10 @@ export interface FetchScoreOptions extends GetQuoteOptions {
    * Vouch402 repo's DECISION_LOG. */
   maxAttempts?: number;
   retryDelayMs?: number;
+  /** Opt-in only: makes this result visible on Vouch402's public
+   * activity feed. Defaults to unset, the same attestation-only
+   * behavior as before this option existed. See PaymentProof. */
+  makePublic?: boolean;
 }
 
 /** Retries the resource request with proof of payment attached, until it
@@ -81,7 +85,7 @@ export async function fetchScore(
   const maxAttempts = options.maxAttempts ?? 5;
   const retryDelayMs = options.retryDelayMs ?? 2000;
 
-  const proof: PaymentProof = { resourceId: quote.extra.resourceId, txHash, payer };
+  const proof: PaymentProof = { resourceId: quote.extra.resourceId, txHash, payer, makePublic: options.makePublic };
   const header = Buffer.from(JSON.stringify(proof)).toString("base64");
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

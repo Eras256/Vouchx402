@@ -2176,3 +2176,98 @@ in Recent Activity shows, on screen, beneath the "Fulfilled" badge:
 "Scored 0x53a79b10...7c6263b0 64/100 2d 26 txs 3 contracts". The
 throwaway wallet's row from the earlier verification round (no
 `makePublic`) shows no such line, same as every other non-public row.
+
+## 2026-08-15: `makePublic` exposed through the SDK/CLI/MCP server (0.2.0), and a real npm incident along the way
+
+The protocol-level `makePublic` flag from the "dev wallet / opt-in
+public results" entry only worked if a caller hand-crafted the
+`X-PAYMENT` payload directly: unreachable from any of the three
+published packages. Closed that gap, minor version bump on all three
+(additive, backward-compatible, default unchanged):
+
+- **`vouch402-sdk` (0.1.0 -> 0.2.0)**: `makePublic?: boolean` added to
+  `PaymentProof` and `FetchScoreOptions` (so `GetRiskScoreOptions`
+  inherits it too), threaded into the `X-PAYMENT` payload built in
+  `fetchScore`.
+- **`vouch402` CLI (0.1.0 -> 0.2.0)**: new `--public` flag, dependency
+  on `vouch402-sdk` bumped to `^0.2.0`.
+- **`vouch402-mcp-server` (0.1.0 -> 0.2.0)**: `fetch_risk_score`
+  (the tool that wraps `fetchScore` directly, a real fit) gained an
+  optional `makePublic` input; dependency bumped, server's reported
+  `version` updated to match.
+- `base/skills#152` left untouched, as instructed: no scope added to
+  an open upstream PR under review.
+
+Built, typechecked, and integration-tested all three locally first
+(real Base Sepolia payments, both directions, via a freshly generated
+throwaway wallet funded from the deployer) before ever touching npm,
+per this project's standing rule that the Etherscan/Blockscout-style
+"test it for real, not from docs" bar applies to npm publishes too.
+
+**The actual `npm publish` had to run in the user's own terminal**
+(this environment's npm token is stale, confirmed 401 on `whoami`
+independently of this incident). Handed over the exact command
+sequence. `vouch402-sdk@0.2.0` published cleanly. Then, publishing
+`vouch402` (the CLI): a **new terminal window had defaulted to
+`C:\DaAps\Vouchx402`** (the near-empty single-commit bootstrap/decoy
+repo from the very start of this project, not `C:\DaAps\Vouch402`),
+and `npm publish` ran there directly instead of in `cli/`. That
+decoy repo's own `package.json` happens to also be named `"vouch402"`
+(a real, pre-existing name collision between the CLI package and the
+main repo's own internal `name` field, not something introduced by
+this change), so it published successfully as `vouch402@1.0.0`,
+became the `latest` dist-tag, and shadowed the real CLI (`0.1.0` at
+the time) for anyone running `npm install vouch402` or `npx vouch402`
+in that window.
+
+**Caught immediately by checking `npm view vouch402 dist-tags` and
+`versions`** (read-only, no auth needed, checked independently of
+what the terminal output claimed) rather than trusting the publish
+output alone. Confirmed the leaked tarball was the decoy repo's own
+minimal scaffold (`.agents`/`.claude` skill reference docs, which are
+mirrors of Base's own public documentation, not secret; a 584-byte
+placeholder `DECISION_LOG.md` and 7.4KB `TECHNICAL_SPEC.md` from that
+repo's single bootstrap commit, not this project's real, much larger
+ones; no `src/`, no `.env`, nothing from the real Vouch402 codebase).
+Not a secrets leak, but a real name-squat that would have broken
+`npm install vouch402` for anyone until fixed.
+
+**Fixed in the right order, fastest mitigation first**:
+1. `npm dist-tag add vouch402@0.1.0 latest`, restoring the real CLI as
+   what installs by default, immediately.
+2. `npm unpublish vouch402@1.0.0`, inside npm's unpublish window
+   (published minutes earlier), removing the bad version entirely.
+3. Verified via `npm view` (independently, not just trusting the
+   terminal's own success messages) that `vouch402`'s versions were
+   back to a clean `["0.1.0"]` before allowing the real CLI publish to
+   proceed.
+
+Republished for real from the correct directories (`cli/`,
+`mcp-server/`) after that, with an explicit `Get-Location` +
+`package.json` name/version check inserted before each `npm publish`
+from then on, specifically to catch this exact mistake before it
+could repeat. `cli`'s and `mcp-server`'s `npm install` both hit a
+transient `ETARGET` for `vouch402-sdk@^0.2.0` (registry propagation
+lag, seconds after the SDK publish), but their subsequent `npm run
+build` succeeded anyway using this session's own earlier locally-
+linked SDK build already sitting in `node_modules` (same content,
+verified byte-identical to what got published), so the built
+artifacts were correct despite the transient install error. Final
+state confirmed clean: `vouch402` `["0.1.0","0.2.0"]`/latest `0.2.0`,
+`vouch402-sdk` `["0.1.0","0.2.0"]`/latest `0.2.0`,
+`vouch402-mcp-server` `["0.1.0","0.2.0"]`/latest `0.2.0`, and both
+`cli`/`mcp-server`'s published `dependencies` field confirmed via
+`npm view` to correctly read `vouch402-sdk: "^0.2.0"`.
+
+**Verified live against production using the actually-published
+package**, run from outside the repo entirely (`npx vouch402@0.2.0`,
+a fresh registry fetch, no local source or locally-linked SDK in
+reach) with a fresh throwaway wallet funded with real mainnet
+ETH/USDC for this specific check:
+- `npx vouch402@0.2.0 score <throwaway-address> --public`: real
+  payment tx `0x3c0202a2...`, and the resulting `GET
+  /v1/activity?network=base` item carries a full `publicResult`
+  (`score: 99`, real signals).
+- The same address again, flag omitted (the default): real payment tx
+  `0x714059b0...`, and that item has no `publicResult` key at all in
+  the live response, same as before this feature existed.

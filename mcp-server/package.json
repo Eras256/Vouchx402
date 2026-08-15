@@ -1,6 +1,6 @@
 {
   "name": "vouch402-mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Standalone MCP server for Vouch402: x402-metered on-chain risk scores for Base addresses, with EAS fulfillment attestations. Never holds a wallet or signs transactions itself.",
   "type": "module",
   "bin": {
@@ -31,7 +31,7 @@
     "directory": "mcp-server"
   },
   "dependencies": {
-    "vouch402-sdk": "^0.1.0",
+    "vouch402-sdk": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.24.1"
   },

@@ -58,6 +58,17 @@ vouch402 score <address> --base-url https://your-instance.example
 Defaults to the live Vouch402 instance (`https://vouch402.fly.dev`,
 Base mainnet).
 
+### Making a result public
+
+```bash
+vouch402 score <address> --public
+```
+
+By default, a scored result is attestation-only on Vouch402's public
+activity feed: no address, score, or signals shown, only that a
+fulfillment happened. `--public` opts this specific result into being
+shown in full. Off unless you ask for it.
+
 ## Development
 
 ```bash

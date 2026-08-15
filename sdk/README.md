@@ -49,6 +49,20 @@ public RPC node the server's next read happens to land on.
 `verifyAttestation` is a plain read against EAS: no signer or key
 needed, since it's not submitting anything on-chain.
 
+### Making a result public
+
+By default, a scored result is attestation-only on Vouch402's public
+activity feed: no address, score, or signals are shown, only that a
+fulfillment happened. Pass `makePublic: true` to opt this specific
+result into being shown in full:
+
+```ts
+const result = await getRiskScore(address, account, { makePublic: true });
+```
+
+Works the same on `fetchScore` directly. Off unless you ask for it,
+same before and after this option existed.
+
 ## API
 
 - `getQuote(address, options?)`: GET the resource, parse the 402

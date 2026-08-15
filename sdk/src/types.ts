@@ -43,6 +43,11 @@ export interface PaymentProof {
   resourceId: string;
   txHash: string;
   payer: string;
+  /** Opt-in only: makes this result visible on Vouch402's public
+   * activity feed (address, score, and signals). Omitted or false
+   * keeps the default: attestation-only, no visible signals. See the
+   * main repo's DECISION_LOG.md, "dev wallet / opt-in public results". */
+  makePublic?: boolean;
 }
 
 /** The X402ServiceFulfillment attestation's decoded on-chain fields, as

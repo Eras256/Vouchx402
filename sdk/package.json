@@ -1,6 +1,6 @@
 {
   "name": "vouch402-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript client for Vouch402: x402-metered on-chain risk scores for Base addresses, with EAS fulfillment attestations.",
   "type": "module",
   "main": "./dist/index.js",
