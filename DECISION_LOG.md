@@ -2355,3 +2355,79 @@ content contains "all published on npm at `0.2.0`" and no remaining
 "none published to npm yet" string; `gh repo view Eras256/Vouchx402
 --json homepageUrl` confirmed `https://www.vouch402.xyz`, not the old
 `vercel.app` value.
+
+## 2026-08-15: Bug search in two Base-ecosystem dependencies (x402-foundation/x402, ethereum-attestation-service/eas-sdk) — one real finding, filed upstream
+
+Asked to look for genuine bugs/contribution gaps in two repos this
+project actually touches: `x402-foundation/x402`'s EVM `exact` scheme
+(the closest conceptual relative of Vouch402's own custom
+"exact-direct" scheme, though — checked directly — Vouch402 doesn't
+actually depend on that package; it's not in any `package.json` here,
+and "exact-direct" doesn't exist in that repo at all, it's Vouch402's
+own name for its own implementation), and `eas-sdk`, which Vouch402
+does call directly (`EAS`, `SchemaRegistry`, `SchemaEncoder` in
+`src/lib/eas.ts` / `src/attestation/`) for every attestation it emits.
+
+**`x402-foundation/x402`**: read `eip3009.ts`, `eip3009-utils.ts`,
+`permit2.ts` (facilitator), `verifySignature.ts`, `erc20approval.ts`,
+`multicall.ts`, and the `exact` scheme routers. Found nothing that
+survived verification. Two candidates were checked against real source
+and ruled out rather than reported: a `||` vs `??` inconsistency in
+`v`/`yParity` handling turned out equivalent once `viem`'s own
+`parseSignature` source confirmed `v` is never a falsy-but-defined
+value; a suspected missing `receipt.status` check in `Transaction.wait()`
+turned out already handled by `ethers@6` itself (`checkReceipt` throws
+`CALL_EXCEPTION` on revert before this code ever sees a bad receipt).
+No report filed — the repo is also extremely heavily reviewed already
+(thousands of issues, several closed as real found-and-fixed attacks on
+this exact Permit2 code), so "nothing new" is a credible outcome, not a
+sign the search was shallow.
+
+**`eas-sdk`**: `getUIDsFromAttestReceipt`/`getDataFromReceipt`
+(`src/utils.ts`) filter a transaction receipt's logs by `topics[0]`
+(event signature hash) only, never by which contract emitted the log.
+A schema's resolver contract runs inside the same transaction as
+`attest()`/`multiAttest()` and can emit its own log with the same
+`topic0` and a forged `uid`. Checked execution order directly against
+`eas-contracts/contracts/EAS.sol`: the real `Attested` event is emitted
+*before* the resolver call for single-schema `attest()` (so the `[0]`
+index that `EAS.attest()` reads is safe in practice), but `multiAttest()`
+returns the *entire* unfiltered array with no length check, and
+supports batching across multiple different schemas (each with its own
+resolver) in one transaction — a malicious/compromised resolver on any
+one schema in the batch can inject forged UIDs or misalign the
+positional correspondence to the caller's requests.
+
+**Verified by running it, not just reading it**: reproduced
+`getDataFromReceipt` verbatim against a synthetic two-log receipt (one
+genuine log from the real Base EAS address `0x4200...0021`, one forged
+log from an arbitrary address standing in for a malicious resolver,
+both same `topic0`) using real `ethers@6`. Output included both UIDs,
+forged one included, no signal it came from a different contract.
+Confirmed no existing report first (`gh issue list` search on
+`resolver`/`getUID`/`multiAttest`/`spoof` across the repo's full
+history, open and closed — nothing).
+
+**Honest scoping, stated up front in the report itself**: Vouch402 is
+not exposed by this — both its schemas register with
+`resolverAddress: ZERO_ADDRESS` (`src/attestation/schemas.ts`) and it
+only ever calls single-schema `attest()`, never `multiAttest()`. This
+is a real library-level bug surfaced while auditing a dependency this
+project uses, not an active vulnerability in Vouch402 itself.
+
+Filed as [eas-sdk#132](https://github.com/ethereum-attestation-service/eas-sdk/issues/132)
+("getUIDsFromAttestReceipt trusts log topic0 without checking emitter
+address — a malicious resolver can inject spoofed UIDs in
+multiAttest()"), attributed to `Eras256`, with the PoC and a concrete
+suggested fix (filter by `log.address` in addition to `topics[0]`,
+threading the EAS contract address through). No `SECURITY.md` in either
+`eas-sdk` or `eas-contracts`, so a public issue is the normal channel,
+not a shortcut around private disclosure.
+
+**Verified live after posting**, not just trusting `gh issue create`'s
+own success output: a separate `gh issue view 132 --repo
+ethereum-attestation-service/eas-sdk --json number,title,url,author,state,body`
+read the issue back and confirmed `state: OPEN`, `author: Eras256`, and
+the full body (PoC output, suggested fix, scoping note) present
+untruncated at
+https://github.com/ethereum-attestation-service/eas-sdk/issues/132.

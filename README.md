@@ -43,6 +43,18 @@ resolved via EAS, the Builder Code suffix compared byte-for-byte against
 the real transaction's calldata) is in `DECISION_LOG.md` under "Phase 3
 gate: met".
 
+## Ecosystem contributions
+
+While auditing `eas-sdk` — the library this project calls directly for
+every attestation it emits — found and reported
+[eas-sdk#132](https://github.com/ethereum-attestation-service/eas-sdk/issues/132):
+its receipt-parsing helpers (`getUIDsFromAttestReceipt` and friends)
+match event logs by signature only, not by emitting contract, so a
+schema's resolver can inject a forged UID into `multiAttest()`'s
+result. Vouch402 itself isn't affected (no resolver, no `multiAttest()`
+calls) — this is a library-level finding reported upstream, not a gap
+in this project.
+
 ## How it works
 
 ```
