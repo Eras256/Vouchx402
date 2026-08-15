@@ -2431,3 +2431,76 @@ read the issue back and confirmed `state: OPEN`, `author: Eras256`, and
 the full body (PoC output, suggested fix, scoping note) present
 untruncated at
 https://github.com/ethereum-attestation-service/eas-sdk/issues/132.
+
+## 2026-08-15: `foundry-rs/foundry` — `cast wallet new <name>` still broken despite its tracking issue closed as "completed"; own README told users to run it
+
+Third pass at the same bug-search task, narrowed to one target this
+time: `foundry-rs/foundry`, specifically `cast wallet` and the keystore
+decryption flow `src/lib/keystore.ts`/`cli/src/keystore.ts` actually
+depend on (both call `EthersWallet.fromEncryptedJsonSync` against
+whatever `cast wallet new`/`import` writes). A prior pass (this same
+session) had already cleared `blockscout/blockscout` and `wevm/viem`
+with nothing genuine surviving verification.
+
+**Incident, disclosed as it happened, not after**: testing `cast wallet
+import`/`new`'s default-directory behavior, tried overriding `HOME` for
+the `cast` subprocess to keep everything in scratch. That override is a
+no-op against the native Windows `cast.exe` (it resolves the home
+directory through Windows APIs, not the `HOME` env var Git Bash sets),
+so two test invocations actually wrote into the real
+`~/.foundry/keystores/` — an anonymous UUID-named keystore and one
+named `bare-name-test`, both from disposable test keys with no real
+value. Caught immediately via `ls`, confirmed via checksums that the
+two real files there (`vouch402-deployer`, `throwaway-test`) were
+untouched, then deleted only the two files just created. User
+independently re-verified `~/.foundry/keystores/` afterward and
+confirmed it was clean.
+
+**The actual finding**: `cast wallet new <name>` (a single bare
+argument) fails —
+
+```
+$ cast wallet new my-wallet --unsafe-password "x"
+Error: If you specified a directory, please make sure it exists...
+my-wallet is not a directory.
+```
+
+— while `cast wallet import <name>` (same single-argument shape)
+succeeds and implicitly saves to `~/.foundry/keystores/<name>`. This
+exact gap was already reported,
+[foundry-rs/foundry#11147](https://github.com/foundry-rs/foundry/issues/11147)
+("Cast treats keystores inconsistently"), and closed as `completed`
+against [#9201](https://github.com/foundry-rs/foundry/pull/9201). Read
+that PR's merged diff directly: it only added a fallback for the
+*zero*-positional-plus-password-flag case (an anonymous UUID-named
+keystore in the default directory), never the "give it a name, land in
+the default directory" case #11147 actually asked for — a gap the
+PR's own author acknowledged in the issue thread ("same ask... except
+without a flag") without reopening it. User independently reproduced
+both the failure and the working form
+(`cast wallet new ~/.foundry/keystores my-wallet`) fresh in a scratch
+dir before authorizing the report.
+
+**Real-world impact, not hypothetical**: `cli/README.md` documented the
+exact broken form, `cast wallet new my-wallet`, copied from the working
+`cast wallet import my-wallet --interactive` pattern one section above
+it — a reasonable assumption given the two subcommands are meant to
+produce the same kind of artifact.
+
+Filed as
+[foundry-rs/foundry#16209](https://github.com/foundry-rs/foundry/issues/16209),
+attributed to `Eras256`: the repro against `cast 1.7.1`, the diff-level
+explanation of why #11147's fix doesn't cover the reported case, the
+real-world impact, and two suggested fixes (infer `ACCOUNT_NAME` from a
+single non-directory positional, or reopen #11147 instead of leaving it
+closed against a partial fix). Verified live via a separate
+`gh issue view 16209 --json number,title,url,author,state,body` read
+(not the create command's own output): `state: OPEN`,
+`author: Eras256`, full body present.
+
+**Fixed `cli/README.md`** to `cast wallet new ~/.foundry/keystores
+my-wallet`, with a one-line note on why the shorter form doesn't work
+and a pointer to this entry. No other file in the repo documented the
+broken form (checked via `grep -rn "cast wallet new"` across the whole
+tree; the other mentions in `src/lib/keystore.ts`/`cli/src/keystore.ts`
+are generic references, not a specific broken invocation).

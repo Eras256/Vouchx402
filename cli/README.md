@@ -42,8 +42,14 @@ vouch402 score 0x53a79B109fa77c05B043e73A284a22b57c6263b0
 `~/.foundry/keystores/`. If you don't already have one:
 
 ```bash
-cast wallet new my-wallet
+cast wallet new ~/.foundry/keystores my-wallet
 ```
+
+(Not `cast wallet new my-wallet` alone — `cast wallet new` takes
+`[PATH] [ACCOUNT_NAME]`, and a single bare argument binds to `PATH`,
+not the account name, so that shorter form fails with "my-wallet is
+not a directory." Verified directly against `cast 1.7.1`; see
+`DECISION_LOG.md`.)
 
 Alternatively, `VOUCH402_KEYSTORE_JSON` accepts the keystore file's
 contents inline, useful in environments without a local
