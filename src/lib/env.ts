@@ -41,8 +41,6 @@ export const env = {
   usdcSepolia: optional("USDC_ADDRESS_BASE_SEPOLIA", "0x036CbD53842c5426634e7929541eC2318f3dCF7e"),
   usdcMainnet: optional("USDC_ADDRESS_BASE_MAINNET", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
 
-  etherscanApiKey: optional("ETHERSCAN_API_KEY", ""),
-
   deployerKeystoreAccount: optional("DEPLOYER_KEYSTORE_ACCOUNT", ""),
   deployerKeystorePassword: optional("DEPLOYER_KEYSTORE_PASSWORD", ""),
 
@@ -109,15 +107,19 @@ export function easExplorerAttestationUrl(network: NetworkName, uid: string): st
 }
 
 /**
- * Etherscan's per-chain V1 endpoints (api.basescan.org/api,
- * api-sepolia.basescan.org/api) are deprecated: confirmed directly (a
- * live call returned `{"status":"0","message":"NOTOK","result":"...
- * deprecated V1 endpoint..."}`), not assumed. V2 unifies every chain
- * under one host with `chainid` selecting the network; Base's chain ID
- * doubles as the Etherscan V2 chainid, no separate mapping needed.
+ * Etherscan's unified V2 API worked for this (see DECISION_LOG.md for
+ * the earlier V1-deprecation finding), but Etherscan dropped free-tier
+ * access to Base in November 2025; confirmed live, not assumed (a real
+ * call with a real key returned `{"status":"0","message":"NOTOK",
+ * "result":"Free API access is not supported for this chain..."}`).
+ * Base's own public Blockscout instances speak the same Etherscan-
+ * compatible `module=account&action=txlist` shape, need no API key at
+ * all, and were verified directly against real addresses on both
+ * networks before switching. See DECISION_LOG.md for the full
+ * before/after.
  */
-export function etherscanApiBaseFor(_network: NetworkName): string {
-  return "https://api.etherscan.io/v2/api";
+export function blockscoutApiBaseFor(network: NetworkName): string {
+  return network === "base" ? "https://base.blockscout.com/api" : "https://base-sepolia.blockscout.com/api";
 }
 
 // These two read `process.env` live (not the `env` snapshot above) because

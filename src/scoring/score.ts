@@ -1,6 +1,6 @@
 import { isAddress } from "viem";
 import { publicClientFor } from "../lib/chain";
-import { etherscanApiBaseFor, chainIdFor, env, type NetworkName } from "../lib/env";
+import { blockscoutApiBaseFor, type NetworkName } from "../lib/env";
 import flaggedList from "./flagged-addresses.json";
 
 export interface RiskSignals {
@@ -15,7 +15,7 @@ export interface RiskResult {
   signals: RiskSignals;
 }
 
-interface EtherscanTx {
+interface ExplorerTx {
   timeStamp: string;
   to: string;
   from: string;
@@ -23,17 +23,16 @@ interface EtherscanTx {
 }
 
 /**
- * Pulls the address's earliest transaction via the BaseScan/Etherscan
- * "account txlist" API (sorted ascending, one result). Plain JSON-RPC has
- * no "first tx" query; this is why an explorer API + key is needed for
- * that specific signal. Returns [] if no key is configured or the address
- * has no history (fresh wallet).
+ * Pulls the address's transaction history via Base's public Blockscout
+ * instance (see DECISION_LOG.md), using its Etherscan-compatible
+ * `account txlist` shape (sorted ascending, so `[0]` is the earliest
+ * tx). Plain JSON-RPC has no "first tx" query, which is why an explorer
+ * API is needed for that specific signal. No API key required. Returns
+ * [] if the request fails, rate-limits, or the address has no history
+ * (fresh wallet): a degraded signal, never a hard error.
  */
-async function fetchTxHistory(network: NetworkName, address: string, max = 200): Promise<EtherscanTx[]> {
-  if (!env.etherscanApiKey) return [];
-
-  const url = new URL(etherscanApiBaseFor(network));
-  url.searchParams.set("chainid", String(chainIdFor(network)));
+async function fetchTxHistory(network: NetworkName, address: string, max = 200): Promise<ExplorerTx[]> {
+  const url = new URL(blockscoutApiBaseFor(network));
   url.searchParams.set("module", "account");
   url.searchParams.set("action", "txlist");
   url.searchParams.set("address", address);
@@ -42,11 +41,10 @@ async function fetchTxHistory(network: NetworkName, address: string, max = 200):
   url.searchParams.set("page", "1");
   url.searchParams.set("offset", String(max));
   url.searchParams.set("sort", "asc");
-  url.searchParams.set("apikey", env.etherscanApiKey);
 
   const res = await fetch(url.toString());
   if (!res.ok) return [];
-  const body = (await res.json()) as { status: string; result: EtherscanTx[] | string };
+  const body = (await res.json()) as { status: string; result: ExplorerTx[] | string };
   if (body.status !== "1" || !Array.isArray(body.result)) return [];
   return body.result;
 }

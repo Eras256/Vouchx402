@@ -1979,3 +1979,80 @@ overflow across all three pages, both locales, six widths (the same
 sweep already built for the earlier overflow-fix entry, rerun here
 since the navbar's `Logo` size changed slightly), and both themes
 checked by screenshot.
+
+## 2026-08-14: Swapped Etherscan for Blockscout on the `walletAgeDays`/`uniqueContractInteractions` signals, avoiding a $49/mo recurring cost
+
+The user obtained a real `ETHERSCAN_API_KEY` and asked it to be wired
+in. Added it to `.env` (not `.env.example`) and as a Fly secret,
+redeployed, then verified live against production with a real paid
+CLI call: `walletAgeDays` and `uniqueContractInteractions` were still
+both `0`. Root-caused by replaying the exact request the server makes
+(`api.etherscan.io/v2/api?chainid=8453&...`) with the real key:
+
+```
+{"status":"0","message":"NOTOK","result":"Free API access is not
+supported for this chain. Please upgrade your api plan for full chain
+coverage. https://etherscan.io/apis"}
+```
+
+The same key worked fine against chainid `84532` (Base Sepolia, real
+tx data came back) and chainid `1` (Ethereum mainnet, valid response,
+genuinely no history). So the key itself was correctly wired end to
+end; Etherscan dropped free-tier access to Base (along with Optimism
+and BNB Chain) in November 2025. Their paid "Lite" tier that restores
+it runs ~$49/month.
+
+**Decision: try a free alternative before paying for it.** Tested,
+not just read about, three candidates against the same real address
+(`0x53a79B109fa77c05B043e73A284a22b57c6263b0`):
+
+- **Blockscout**: Base runs its own public Blockscout instances
+  (`base.blockscout.com`, `base-sepolia.blockscout.com`), separate
+  infrastructure from Etherscan/Basescan (which are the same
+  paywalled backend now, confirmed, not a separate escape hatch).
+  They also speak Etherscan's legacy `module=account&action=txlist`
+  shape directly, no API key at all. Queried live: 23 real
+  transactions back for the test address on mainnet, correctly
+  sorted ascending, first/last timestamps consistent with known
+  wallet age, 3 unique contract interactions computed with the exact
+  same filter logic already in `scoreFromSignals`. Sepolia instance
+  verified reachable too.
+- **Alchemy**: tested the public `demo` key's `alchemy_getAssetTransfers`
+  against the same address; it does return real data, but the `erc20`
+  category includes unsolicited incoming token-transfer *logs*, not
+  just transactions the address itself initiated, including obvious
+  spam tokens spoofing "ETH"/"USDC" via lookalike Unicode characters
+  sent to this exact address by contracts it never interacted with.
+  Using that as a stand-in for "unique contract interactions" would
+  be trivially gameable (anyone can inflate their own score by
+  spamming fake token sends to themselves from many addresses). The
+  `demo` key is also explicitly not meant for production use, and a
+  real Alchemy account needs signup this session can't do on the
+  user's behalf. Ruled out on both data-quality and access grounds.
+- Didn't test Covalent/Moralis/Ankr: Blockscout already won cleanly
+  on every axis (free, no signup, correct data, matches the existing
+  filter logic exactly), so pursuing further candidates would have
+  been busywork.
+
+Wired Blockscout in (`src/lib/env.ts`'s `blockscoutApiBaseFor`,
+`src/scoring/score.ts`'s `fetchTxHistory`), removed the
+`etherscanApiKey` env plumbing entirely (dead now, not partially
+wired), and removed `ETHERSCAN_API_KEY` from `.env.example` since the
+code no longer reads it. Kept the exact same graceful-degrade-to-`[]`
+behavior on any fetch failure/unexpected shape/rate-limit: this is a
+signal source swap, not a reliability-guarantee change, and a broken
+explorer call must never become a hard error on `/v1/risk-score`.
+
+**Verified live against production after redeploying**: real paid CLI
+call against `0x53a79B109fa77c05B043e73A284a22b57c6263b0` returned
+`{"walletAgeDays":2,"txCount":22,"uniqueContractInteractions":3,
+"flagged":false}`, independently resolved via EAS. A real change from
+the `0`/`0` every prior mainnet response had shown, both before the
+Etherscan key existed and after it was configured but blocked by the
+free-tier chain restriction above.
+
+The real `ETHERSCAN_API_KEY` value was left in `.env` (gitignored,
+unread by any code path now) rather than deleted, in case the paid
+tier is reconsidered later; the corresponding Fly secret was likewise
+left in place, unread and harmless. Neither was ever printed in a
+commit, log, or reply.
