@@ -111,6 +111,7 @@
     "addressPlaceholder": "0x...",
     "addressInvalid": "Enter a valid 0x-prefixed Base address.",
     "networkNote": "Runs on {network}. Switch networks in the navbar above. Testnet is the safe default: no real funds involved.",
+    "makePublicLabel": "Show this result in full on the public activity feed. Off by default: only that a fulfillment happened is shown, not the address or score.",
     "phase": {
       "quoting": "Requesting a quote...",
       "awaitingPayment": "Approve {amount} USDC to {payTo} in your wallet...",

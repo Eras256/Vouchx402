@@ -24,6 +24,7 @@ export function TryIt() {
   const { phase, run, reset } = useRiskScoreDemo();
   const [address, setAddress] = useState(DEFAULT_ADDRESS);
   const [addressTouched, setAddressTouched] = useState(false);
+  const [makePublic, setMakePublic] = useState(false);
 
   const apiNetwork = toApiNetwork(network);
   const addressValid = ADDRESS_PATTERN.test(address.trim());
@@ -32,7 +33,7 @@ export function TryIt() {
   function handlePayClick() {
     setAddressTouched(true);
     if (!addressValid || busy) return;
-    void run(address.trim(), network);
+    void run(address.trim(), network, makePublic);
   }
 
   return (
@@ -63,6 +64,17 @@ export function TryIt() {
               className="data mt-2 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
             />
             {addressTouched && !addressValid && <p className="mt-1.5 text-xs text-error">{t("addressInvalid")}</p>}
+
+            <label className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={makePublic}
+                disabled={busy}
+                onChange={(e) => setMakePublic(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary disabled:opacity-50"
+              />
+              <span>{t("makePublicLabel")}</span>
+            </label>
 
             <div className="mt-5">
               <BasePayButton colorScheme={(theme as "light" | "dark" | "system" | undefined) ?? "system"} onClick={handlePayClick} />

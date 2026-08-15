@@ -111,6 +111,7 @@
     "addressPlaceholder": "0x...",
     "addressInvalid": "Ingresa una dirección de Base válida con prefijo 0x.",
     "networkNote": "Se ejecuta en {network}. Cambia de red en la barra de navegación de arriba. Testnet es la opción segura por defecto: no involucra fondos reales.",
+    "makePublicLabel": "Muestra este resultado completo en el feed de actividad pública. Desactivado por defecto: solo se muestra que hubo un cumplimiento, sin la dirección ni el puntaje.",
     "phase": {
       "quoting": "Solicitando una cotización...",
       "awaitingPayment": "Aprueba {amount} USDC a {payTo} en tu wallet...",

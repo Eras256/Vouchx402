@@ -28,14 +28,17 @@ const PAYMENT_POLL_MAX_ATTEMPTS = 20; // ~30s ceiling before surfacing an error
  *   3. getPaymentStatus() polled until the transfer is confirmed, which
  *      is also the only place the payer's address is available (`sender`)
  *   4. GET /v1/risk-score/:address again, this time with the real
- *      { resourceId, txHash, payer } proof: Vouch402's own backend
- *      independently re-verifies this against the actual chain before
- *      releasing anything; nothing here is taken on faith.
+ *      { resourceId, txHash, payer, makePublic } proof: Vouch402's own
+ *      backend independently re-verifies this against the actual chain
+ *      before releasing anything; nothing here is taken on faith.
+ *      `makePublic` just carries through whatever the caller passed in;
+ *      it opts this one result into the public activity feed, same
+ *      opt-in the SDK/CLI/MCP server expose (see DECISION_LOG.md).
  */
 export function useRiskScoreDemo() {
   const [phase, setPhase] = useState<DemoPhase>({ status: "idle" });
 
-  const run = useCallback(async (address: string, uiNetwork: "testnet" | "mainnet") => {
+  const run = useCallback(async (address: string, uiNetwork: "testnet" | "mainnet", makePublic: boolean) => {
     const testnet = uiNetwork === "testnet";
     try {
       setPhase({ status: "quoting" });
@@ -64,6 +67,7 @@ export function useRiskScoreDemo() {
         resourceId: requirement.extra.resourceId,
         txHash: payment.id,
         payer: paymentStatus.sender,
+        makePublic,
       });
 
       setPhase({ status: "done", result, txHash: payment.id });

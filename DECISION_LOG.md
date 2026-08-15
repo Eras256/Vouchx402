@@ -2271,3 +2271,42 @@ ETH/USDC for this specific check:
 - The same address again, flag omitted (the default): real payment tx
   `0x714059b0...`, and that item has no `publicResult` key at all in
   the live response, same as before this feature existed.
+
+## 2026-08-14: `makePublic` made discoverable on the site itself, not just the npm READMEs
+
+A follow-up to the previous entry flagged the gap directly: `makePublic`
+was real and working in the SDK/CLI/MCP server (0.2.0, verified live),
+but neither the Docs page nor the Try It demo mentioned it. A visitor
+using the site's own demo had no way to opt in or even know the option
+existed; only someone reading a package README would ever find it.
+
+**Docs page**: added a `### Public results (\`makePublic\`)` subsection
+to `docs/TECHNICAL_SPEC.md`, between the `GET /v1/risk-score/:address`
+and `GET /v1/metrics` sections, covering what it does, how to reach it
+from each of the three client packages, and the dev-wallet exception.
+Re-ran `web/scripts/sync-docs.mjs` to refresh the committed copy the
+Docs page actually reads (`web/content/technical-spec.md`); see that
+script and the "Vercel Root Directory" entry above for why a runtime
+read of the repo-root file can't be used directly.
+
+**Try It demo**: turned out to be a small lift, matching the second
+option's stated scope. Added a checkbox ("Show this result in full on
+the public activity feed...") to `try-it.tsx`, threaded as a new
+`makePublic` argument through `useRiskScoreDemo`'s `run()` into
+`fetchRiskScoreWithProof`'s proof object, which was already exactly the
+`{ resourceId, txHash, payer }` shape `decodePaymentHeader()` expects
+server-side (extending it, not routing around it) — the same
+`X-PAYMENT` payload shape as the SDK/CLI/MCP server, unset by default.
+Added `makePublicLabel` to both `en.json`/`es.json`.
+
+**Verified against a local production build, not just written**:
+`npx tsc --noEmit` and `eslint` clean on all three touched files,
+`npm run build` clean (including the `prebuild` sync-docs step), then
+`npm run start` and checked both pages directly rather than assuming
+the code was right: `curl`'d `/en/docs` and confirmed the new
+`### Public results (makePublic)` section renders in the page's HTML
+(and its own ToC entry), and a Playwright screenshot of `/en#try-it`
+shows the new checkbox sitting between the address field and the Base
+Pay button, matching the existing input's styling. Local-only at this
+point — see whether this got pushed and deployed in the next entry
+before treating it as verified live.

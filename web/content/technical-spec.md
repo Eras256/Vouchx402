@@ -79,6 +79,22 @@ presented as a complete risk model. `attestationUid` points to the
 below), letting any party independently verify what was returned via its
 `responseHash`.
 
+### Public results (`makePublic`)
+
+Every fulfillment is attested on-chain either way, but the address, score,
+and signals are shown on Vouch402's public activity feed only when the
+payer opts in. By default a fulfillment shows on the feed as just that: a
+fulfillment happened, with no address or outcome attached. Setting
+`makePublic: true` on the payment proof opts that specific result into
+being shown in full.
+
+Reachable through any of the three client packages: `{ makePublic: true }`
+on `vouch402-sdk`'s `getRiskScore`/`fetchScore`, `--public` on the CLI, or
+the `makePublic` argument on the MCP server's `fetch_risk_score` tool. One
+exception: Vouch402's own dev/test wallet shows full results by default,
+without needing the flag, since its results have already been used as
+public proof-of-concept data throughout this project.
+
 ### `GET /v1/metrics`
 
 Public. Aggregate, real (not estimated) counters: unique payers, total
