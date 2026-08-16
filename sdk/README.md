@@ -37,7 +37,9 @@ import { getQuote, pay, fetchScore, verifyAttestation } from "vouch402-sdk";
 
 const quote = await getQuote(address);           // parses the 402 body
 const txHash = await pay(quote, account);         // on-chain USDC transfer
-const result = await fetchScore(address, quote, txHash, account.address);
+const result = await fetchScore(address, quote, txHash, account.address, {
+  jurisdictionAttestation: true,                  // required, see below
+});
 const attestation = await verifyAttestation(result.attestationUid, quote.network);
 ```
 
@@ -49,6 +51,25 @@ public RPC node the server's next read happens to land on.
 `verifyAttestation` is a plain read against EAS: no signer or key
 needed, since it's not submitting anything on-chain.
 
+### Jurisdiction attestation (required)
+
+`fetchScore` and `getRiskScore` both require a `jurisdictionAttestation:
+true` option; the API rejects the request outright (`403`) without it.
+It certifies that the caller (and whoever it's acting for) is not
+located in, and is not paying on behalf of anyone in, Cuba, Iran, North
+Korea, Syria, the Russian-occupied regions of Ukraine, or mainland
+China. See the "Restricted Jurisdictions" section at
+[vouch402.xyz/legal](https://www.vouch402.xyz/legal) for the legal
+basis behind each entry.
+
+This exists specifically because most callers of this SDK are
+autonomous agents, not a human clicking a checkbox in a browser (the
+website's own "Try It" demo has that checkbox; this option is its
+equivalent for code). Whatever is calling this SDK is responsible for
+deciding this honestly, not defaulting it to `true` reflexively: the
+strict-boolean handling matches `makePublic` below, only the literal
+`true` counts.
+
 ### Making a result public
 
 By default, a scored result is attestation-only on Vouch402's public
@@ -57,7 +78,10 @@ fulfillment happened. Pass `makePublic: true` to opt this specific
 result into being shown in full:
 
 ```ts
-const result = await getRiskScore(address, account, { makePublic: true });
+const result = await getRiskScore(address, account, {
+  makePublic: true,
+  jurisdictionAttestation: true,
+});
 ```
 
 Works the same on `fetchScore` directly. Off unless you ask for it,

@@ -22,7 +22,7 @@ import type { X402PaymentRequiredBody } from "../src/server/x402";
 describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
   let server: Server;
   let baseUrl: string;
-  let lastProof: { resourceId: string; txHash: string; payer: string } | undefined;
+  let lastProof: { resourceId: string; txHash: string; payer: string; jurisdictionAttestation: boolean } | undefined;
 
   beforeAll(async () => {
     const app = createApp();
@@ -91,6 +91,7 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
       resourceId: requirement.extra.resourceId,
       txHash,
       payer: account.address,
+      jurisdictionAttestation: true,
     };
     lastProof = proof;
     const xPayment = Buffer.from(JSON.stringify(proof)).toString("base64");
@@ -111,6 +112,50 @@ describe("GET /v1/risk-score/:address (Base Sepolia)", () => {
 
     console.log(`[Phase 1] Gate met: 200 response for a real settled payment. tx=${txHash} score=${body.score}`);
   }, 60_000);
+
+  it("rejects a paid retry missing the required jurisdiction attestation", async () => {
+    // No real payment needed: the attestation check runs before payment
+    // verification (fail fast), so a garbage resourceId/txHash/payer is
+    // enough to prove the gate itself, distinct from "payment invalid".
+    const targetAddress = env.payTo;
+    const fakeProof = { resourceId: "0xfake", txHash: "0xfake", payer: "0xfake" };
+    const xPayment = Buffer.from(JSON.stringify(fakeProof)).toString("base64");
+
+    const res = await fetch(`${baseUrl}/v1/risk-score/${targetAddress}`, {
+      headers: { "X-PAYMENT": xPayment },
+    });
+    const body = await res.json();
+    expect(res.status).toBe(403);
+    expect(body.error).toMatch(/jurisdiction attestation/i);
+  });
+
+  it("still rejects with jurisdictionAttestation explicitly false, not silently treated as true", async () => {
+    const targetAddress = env.payTo;
+    const fakeProof = { resourceId: "0xfake", txHash: "0xfake", payer: "0xfake", jurisdictionAttestation: false };
+    const xPayment = Buffer.from(JSON.stringify(fakeProof)).toString("base64");
+
+    const res = await fetch(`${baseUrl}/v1/risk-score/${targetAddress}`, {
+      headers: { "X-PAYMENT": xPayment },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("passes the attestation gate with jurisdictionAttestation:true, fails later for an unrelated real reason", async () => {
+    // Proves the gate doesn't over-block a properly-attested request: a
+    // fake resourceId still fails, but with payment.ts's own "unknown
+    // resourceId" 402, not the attestation 403 — confirming attested
+    // requests actually reach payment verification.
+    const targetAddress = env.payTo;
+    const fakeProof = { resourceId: "0xfake", txHash: "0xfake", payer: "0xfake", jurisdictionAttestation: true };
+    const xPayment = Buffer.from(JSON.stringify(fakeProof)).toString("base64");
+
+    const res = await fetch(`${baseUrl}/v1/risk-score/${targetAddress}`, {
+      headers: { "X-PAYMENT": xPayment },
+    });
+    const body = await res.json();
+    expect(res.status).toBe(402);
+    expect(body.error).toMatch(/unknown or expired resourceid/i);
+  });
 
   it("rejects replaying the same payment proof", async () => {
     if (!lastProof) throw new Error("Previous test did not produce a settled payment to replay");

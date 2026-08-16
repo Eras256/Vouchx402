@@ -70,6 +70,10 @@ export interface FetchScoreOptions extends GetQuoteOptions {
    * activity feed. Defaults to unset, the same attestation-only
    * behavior as before this option existed. See PaymentProof. */
   makePublic?: boolean;
+  /** Required: see PaymentProof.jurisdictionAttestation. The API
+   * rejects the request outright without this set to `true`; there is
+   * no default here on purpose, the caller must decide it explicitly. */
+  jurisdictionAttestation: boolean;
 }
 
 /** Retries the resource request with proof of payment attached, until it
@@ -79,13 +83,19 @@ export async function fetchScore(
   quote: X402Requirement,
   txHash: string,
   payer: string,
-  options: FetchScoreOptions = {}
+  options: FetchScoreOptions
 ): Promise<RiskScoreResult> {
   const baseUrl = options.baseUrl ?? DEFAULT_API_BASE_URL;
   const maxAttempts = options.maxAttempts ?? 5;
   const retryDelayMs = options.retryDelayMs ?? 2000;
 
-  const proof: PaymentProof = { resourceId: quote.extra.resourceId, txHash, payer, makePublic: options.makePublic };
+  const proof: PaymentProof = {
+    resourceId: quote.extra.resourceId,
+    txHash,
+    payer,
+    makePublic: options.makePublic,
+    jurisdictionAttestation: options.jurisdictionAttestation,
+  };
   const header = Buffer.from(JSON.stringify(proof)).toString("base64");
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -162,7 +172,7 @@ export interface GetRiskScoreResult extends RiskScoreResult {
 export async function getRiskScore(
   address: string,
   signer: Account,
-  options: GetRiskScoreOptions = {}
+  options: GetRiskScoreOptions
 ): Promise<GetRiskScoreResult> {
   const quote = await getQuote(address, options);
   const txHash = await pay(quote, signer);

@@ -210,3 +210,47 @@ These questions are documented explicitly, left unresolved rather than decided u
 7. **Multi-jurisdictional scope:** this document does not cover the EU's GDPR, United States state privacy laws, or any framework outside Mexico, despite the product being publicly and globally accessible. A separate review, with local counsel in each relevant market, is required before claiming compliance outside Mexico.
 
 8. **Off-chain data retention policy:** the current code defines no retention period or deletion mechanism for data stored in the server's own database (beyond what already remains permanently on the blockchain). This is a pending product decision.
+
+---
+
+## 5. Restricted Jurisdictions
+
+**Last reviewed: August 16, 2026.**
+
+Vouch402 restricts who it serves using a **blocklist, not an allowlist**: open to everyone by default, closed only where there is a specific, documented reason. The alternative, an allowlist (closed to everyone except individually pre-approved countries), is deliberately avoided here: it doesn't scale, and it blocks real people who have no actual finding against them, just because their country was never explicitly added to a list. Every entry below exists because of a specific, cited legal basis, verified against a primary source, not copied from a generic "risk countries" list.
+
+**This is a different kind of restriction than the "Buró de Crédito" rule described elsewhere in this project's `DECISION_LOG.md`, worth being explicit about so the two are never confused.** The Buró de Crédito rule governs what Vouch402's API is allowed to say and do about the *address being scored*, a third party, in someone else's transaction; it exists to keep Vouch402 on the "data" side of the line, never the "verdict" or "gatekeeper" side. This section is about something else entirely: an ordinary "who can be our customer" business and compliance decision, the same kind of decision any company offering a paid service online has to make about sanctioned countries. The two rules are not in tension and both remain fully in force.
+
+### 5.1 Tier 1: Prohibited, no exception
+
+Vouch402 does not knowingly serve requests from, or accept payment on behalf of, the following, and blocks them at the technical layer described in 5.3:
+
+| Jurisdiction | Legal basis | Verified |
+|---|---|---|
+| Cuba, Iran, North Korea, Syria | Comprehensive U.S. (OFAC) sanctions programs: the only jurisdictions currently subject to a country-wide embargo (as opposed to targeted/sectoral sanctions on specific persons, entities, or sectors within an otherwise-tradeable country). Checked whether the EU's or the UN's sanctions regimes name any additional comprehensively-embargoed country broader than OFAC's list; found none (EU/UN sanctions add many more individually-listed persons and entities across many more countries, a different, much larger compliance question not attempted here, but no additional country-level embargo). | 2026-08-16 |
+| The Russian-occupied Crimea, Donetsk, and Luhansk regions of Ukraine | Same OFAC comprehensive-sanctions basis as above. **Note the real technical limitation stated in 5.3**: the rest of the Russian Federation is not comprehensively embargoed (it is subject to extensive sectoral and entity-specific sanctions instead, a different and much larger list this document does not attempt to reproduce), and standard IP geolocation resolves to Ukraine as a whole, not to these specific occupied sub-regions, so the technical layer cannot actually enforce this particular line item. Stated here rather than silently dropped. | 2026-08-16 |
+| Mainland China | A separate legal basis from the sanctions programs above, not the same reasoning merged together. The People's Bank of China and seven other national authorities' notice **银发〔2026〕42号** ("Notice on Further Preventing and Disposing of Risks Related to Virtual Currency and Other [Risks]"), issued February 6, 2026, verified directly on the PBoC's own website (`pbc.gov.cn`): it states plainly that offshore entities and individuals may not, in any form, illegally provide virtual-currency-related services to mainland entities ("境外单位和个人不得以任何形式非法向境内主体提供虚拟货币相关服务"), which constitutes illegal financial activity, with explicit extraterritorial reach. **Correction made against the source, not just repeated**: an earlier draft of this document (and the request that produced it) cited a September 2021 notice (银发〔2021〕237号) as the basis; verified directly against the PBoC's own site that this 2026 notice **explicitly repeals** the 2021 one ("同时废止"), so the 2026 notice is the current basis, not the 2021 one. Hong Kong, Macao, and Taiwan are **not** covered by this notice (separate legal and financial systems) and are not restricted by this entry. | 2026-08-16 |
+
+### 5.2 Tier 2: Restricted, pending legal review, not a claim of illegality
+
+The following are **not blocked**, technically or contractually, and nothing here should be read as a statement that Vouch402's service is illegal in these places. It means the opposite of "cleared": these are jurisdictions with a well-documented, genuinely expensive-to-get-wrong regulatory regime that has not yet been reviewed against Vouch402's specific, actual pattern (accepting cryptocurrency as payment for a data service, never custodying or exchanging assets, see 1.3 and 2.1). This document will be updated, and this table's dates revised, once that review happens.
+
+| Jurisdiction | Why it's flagged | Verified |
+|---|---|---|
+| European Union / EEA | The Markets in Crypto-Assets Regulation (MiCA): its transitional period for crypto-asset service providers ended July 1, 2026, meaning full licensing enforcement is now live EU-wide. Whether Vouch402's activity (accepting crypto payment for a non-custodial data service) meets MiCA's definition of a regulated "crypto-asset service" at all has not been reviewed. | 2026-08-16 |
+| United States | Checked FinCEN's own 2019 guidance (FIN-2019-G001, `fincen.gov`) directly: it states that a person who obtains convertible virtual currency and uses it to buy goods or services is not, on that basis alone, a money transmitter, which is a favorable read for a merchant-style pattern like Vouch402's. That guidance is federal only, though; the fifty states (plus D.C.) each have their own money-transmission licensing regimes, sometimes with their own specific virtual-currency provisions (New York's BitLicense being the best known), and none of them has been individually reviewed. | 2026-08-16 |
+
+### 5.3 How this is enforced: two layers, neither one alone is enough
+
+**Technical**: `GET /v1/risk-score/:address` and `POST /v1/disputes` (both the unpaid quote and the paid retry) check the requester's IP address against a Tier 1 country IP-range list before responding, returning `403` if it matches. `GET /v1/metrics` and `GET /v1/activity` are not gated (public, aggregate, unpaid information with nothing being facilitated for a specific requester). Source: `src/lib/geoBlock.ts`, IP-range data from `ipdeny.com`, last fetched 2026-08-16; see that file's own `geo-data/README.md` for the exact data source and its own stated limitation (country-level only, cannot resolve the occupied-Ukraine-region line item in 5.1).
+
+**Contractual**: a required self-certification, with two different shapes because this product has two different kinds of callers, unlike a typical consumer web app:
+
+- On this website's own "Try It" demo, a checkbox must be checked before the Pay button does anything: *"I certify that I am not located in, and am not paying on behalf of anyone in, Cuba, Iran, North Korea, Syria, the Russian-occupied regions of Ukraine, or mainland China."*
+- On the actual `GET /v1/risk-score/:address` endpoint, which is called mostly by autonomous agents programmatically, not a human clicking through a browser, there is no checkbox to click. The equivalent is a required field on the payment proof: `jurisdictionAttestation: true`. Same strict-boolean handling as this project's `makePublic` field elsewhere: only the literal `true` counts, and its absence is rejected outright (`403`) rather than silently treated as `false`.
+
+**Said plainly, not implied otherwise**: IP-based geo-blocking on an API called mostly by autonomous agents is inherently weaker than the same technique on a human browser flow. A human's browser generally reflects where that human actually is; an autonomous agent can be run from a cloud server anywhere in the world regardless of who actually operates it or where they are. The self-certification field exists specifically because the technical layer cannot be airtight for this kind of caller, not because the technical layer is believed to be sufficient on its own.
+
+### 5.4 Not the same question as the operator's own location
+
+Vouch402 is operated from Mexico. That fact, and whether Mexican law (specifically LFPIORPI and Acuerdo 115/2026) applies to Vouch402's own activity, is tracked separately in section 4 above, not resolved by anything in this section. **Mexico does not appear on either tier of this list**, deliberately: blocking Mexican users would not answer the question of whether the operator itself has a compliance obligation, and the two questions (who Vouch402 can serve, versus what obligations apply to Vouch402 itself as the operator) are kept clearly separate here, in the code, and in `DECISION_LOG.md`.

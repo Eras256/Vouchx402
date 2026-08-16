@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { isAddress, formatUnits } from "viem";
 import { defaultNetwork } from "../lib/chain";
 import { computeRiskScore } from "../scoring/score";
@@ -9,6 +9,36 @@ import { attestFulfillment, FulfillmentStatus } from "../attestation/middleware"
 import { submitDispute, DisputeError, DisputeReasonCode } from "../attestation/dispute";
 import { easExplorerAttestationUrl, type NetworkName } from "../lib/env";
 import { DEV_WALLET_ADDRESS } from "../constants/devWallet";
+import { checkTier1 } from "../lib/geoBlock";
+
+// No anchor fragment: the heading's generated id differs by language
+// (rehype-slug slugifies the actual rendered heading text, "Restricted
+// Jurisdictions" vs "Jurisdicciones Restringidas"), and this string is
+// a fixed API error message with no way to know which language a given
+// caller's browser (if any) is currently showing. Landing on the page
+// itself is enough; the section is short and in the table of contents.
+const RESTRICTED_JURISDICTIONS_URL = "https://www.vouch402.xyz/legal";
+
+/**
+ * Technical layer of the Tier 1 restriction (see `src/lib/geoBlock.ts`
+ * and web/content/legal-*.md, "Restricted Jurisdictions"). Scoped to
+ * the routes that actually deliver the paid service or its dispute
+ * mechanism — not `/v1/metrics`/`/v1/activity`, which are public,
+ * unpaid, aggregate information with nothing being facilitated for a
+ * specific requester. `req.ip` relies on `trust proxy` below to read
+ * the real client address from Fly's forwarded headers rather than
+ * Fly's own edge IP.
+ */
+function tier1GeoBlock(req: Request, res: Response, next: NextFunction) {
+  const match = req.ip ? checkTier1(req.ip) : null;
+  if (match) {
+    res.status(403).json({
+      error: `Vouch402 cannot serve requests from ${match.countryName} (Tier 1 restricted jurisdiction, no exception). See ${RESTRICTED_JURISDICTIONS_URL} for the legal basis.`,
+    });
+    return;
+  }
+  next();
+}
 
 function isNetworkName(v: unknown): v is NetworkName {
   return v === "base" || v === "base-sepolia";
@@ -42,6 +72,14 @@ export function createApp(): Express {
     next();
   });
   app.use(express.json());
+
+  // Tier 1 technical layer: applied to the endpoints that actually
+  // deliver the paid service or its dispute mechanism, both the unpaid
+  // quote and the paid retry (blocking only at final payment would let
+  // a blocked requester get all the way through the flow before being
+  // turned away, which is worse UX for them and no more compliant).
+  app.use("/v1/risk-score", tier1GeoBlock);
+  app.use("/v1/disputes", tier1GeoBlock);
 
   app.get("/", (_req, res) => {
     res.status(200).json({
@@ -82,6 +120,23 @@ export function createApp(): Express {
       proof = decodePaymentHeader(paymentHeader);
     } catch {
       res.status(400).json({ error: "Malformed X-PAYMENT header: expected base64 JSON { resourceId, txHash, payer }" });
+      return;
+    }
+
+    // Contractual layer of the Tier 1 restriction, checked before the
+    // on-chain payment verification RPC call (fail fast): this is the
+    // only enforcement point that exists for programmatic callers at
+    // all, since most callers here are autonomous agents, not a human
+    // clicking a "Try It" checkbox. The IP geo-block above is real but
+    // structurally weaker for an agent than for a browser: an agent can
+    // run from a cloud VPS anywhere regardless of who actually operates
+    // it, so this self-certification exists specifically because the
+    // technical layer alone can't be airtight here. Stated plainly, not
+    // implied otherwise, in web/content/legal-*.md and DECISION_LOG.md.
+    if (proof.jurisdictionAttestation !== true) {
+      res.status(403).json({
+        error: `Missing required jurisdiction attestation. Set jurisdictionAttestation: true on the X-PAYMENT payload to confirm you are not located in, and are not paying on behalf of, a Tier 1 restricted jurisdiction. See ${RESTRICTED_JURISDICTIONS_URL} for the legal basis.`,
+      });
       return;
     }
 

@@ -163,7 +163,14 @@ export async function fetchRiskScoreQuote(network: ApiNetwork, address: string):
  * yet, retry shortly" signal, not a hard failure. */
 export async function fetchRiskScoreWithProof(
   address: string,
-  proof: { resourceId: string; txHash: string; payer: string; makePublic?: boolean }
+  proof: {
+    resourceId: string;
+    txHash: string;
+    payer: string;
+    makePublic?: boolean;
+    /** Required: see the "Restricted Jurisdictions" attestation checkbox in try-it.tsx. */
+    jurisdictionAttestation: boolean;
+  }
 ): Promise<RiskScoreResult> {
   const header =
     typeof window !== "undefined" ? window.btoa(JSON.stringify(proof)) : Buffer.from(JSON.stringify(proof)).toString("base64");

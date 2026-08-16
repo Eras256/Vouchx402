@@ -67,7 +67,16 @@ async function main() {
     console.log("   confirmed.");
 
     step(3, "GET /v1/risk-score/:address (paid retry)");
-    const proof = { resourceId: requirement.extra.resourceId, txHash, payer: account.address };
+    // jurisdictionAttestation: true - required, see src/server/app.ts and
+    // web/content/legal-*.md, "Restricted Jurisdictions". This demo runs
+    // against the project's own funded dev wallet, not a real end user,
+    // so attesting true here is accurate.
+    const proof = {
+      resourceId: requirement.extra.resourceId,
+      txHash,
+      payer: account.address,
+      jurisdictionAttestation: true,
+    };
     const xPayment = Buffer.from(JSON.stringify(proof)).toString("base64");
     const fulfillRes = await fetch(`${baseUrl}/v1/risk-score/${target}`, { headers: { "X-PAYMENT": xPayment } });
     const result = await fulfillRes.json();

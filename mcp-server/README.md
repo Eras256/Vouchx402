@@ -37,7 +37,7 @@ raw) key for exactly that single-user, run-it-yourself case.
 - **`get_payment_quote(address, baseUrl?)`**: returns the unsigned x402
   payment requirements for scoring `address` (amount, asset, `payTo`,
   network). Pay it yourself, with your own wallet.
-- **`fetch_risk_score(address, quote, txHash, payer, baseUrl?, makePublic?)`**:
+- **`fetch_risk_score(address, quote, txHash, payer, jurisdictionAttestation, baseUrl?, makePublic?)`**:
   takes the quote you got back and the transaction hash of your
   payment, retries until the server confirms it, then independently
   resolves the resulting attestation against EAS directly (not the
@@ -45,6 +45,16 @@ raw) key for exactly that single-user, run-it-yourself case.
   `false`) opts this specific result into Vouch402's public activity
   feed (address, score, and signals shown in full); otherwise the
   result stays attestation-only, same as before this option existed.
+  `jurisdictionAttestation` is **required, must be the literal `true`**:
+  it certifies that whoever this call is being made for is not located
+  in, and is not paying on behalf of anyone in, Cuba, Iran, North
+  Korea, Syria, the Russian-occupied regions of Ukraine, or mainland
+  China. The API rejects the request outright without it; see the
+  "Restricted Jurisdictions" section at
+  [vouch402.xyz/legal](https://www.vouch402.xyz/legal) for the legal
+  basis behind each entry. This tool is called by an autonomous agent,
+  not a human clicking a checkbox, so whatever is orchestrating this
+  tool call must set this explicitly, never assume it.
 
 ## Usage
 

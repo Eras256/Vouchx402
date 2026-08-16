@@ -113,6 +113,9 @@
     "addressInvalid": "Enter a valid 0x-prefixed Base address.",
     "networkNote": "Runs on {network}. Switch networks in the navbar above. Testnet is the safe default: no real funds involved.",
     "makePublicLabel": "Show this result in full on the public activity feed. Off by default: only that a fulfillment happened is shown, not the address or score.",
+    "jurisdictionAttestationLabel": "I certify that I am not located in, and am not paying on behalf of anyone in, Cuba, Iran, North Korea, Syria, the Russian-occupied regions of Ukraine, or mainland China. Required to pay.",
+    "jurisdictionAttestationLink": "Restricted Jurisdictions",
+    "jurisdictionAttestationRequired": "Required before paying: this attestation confirms you're not in a Tier 1 restricted jurisdiction.",
     "phase": {
       "quoting": "Requesting a quote...",
       "awaitingPayment": "Approve {amount} USDC to {payTo} in your wallet...",

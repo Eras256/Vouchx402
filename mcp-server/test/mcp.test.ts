@@ -72,7 +72,7 @@ describe("vouch402-mcp-server (Base Sepolia, real payments, real MCP client)", (
 
     const scoreResult = await client.callTool({
       name: "fetch_risk_score",
-      arguments: { address, quote, txHash, payer: account.address, baseUrl },
+      arguments: { address, quote, txHash, payer: account.address, baseUrl, jurisdictionAttestation: true },
     });
     expect(scoreResult.isError).not.toBe(true);
     const data = scoreResult.structuredContent as {

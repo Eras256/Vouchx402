@@ -31,7 +31,7 @@ function errorResult(message: string) {
   return { content: [{ type: "text" as const, text: message }], isError: true };
 }
 
-const server = new McpServer({ name: "vouch402", version: "0.2.0" });
+const server = new McpServer({ name: "vouch402", version: "0.3.0" });
 
 server.registerTool(
   "get_payment_quote",
@@ -75,11 +75,20 @@ server.registerTool(
         .describe(
           "Make this result visible on Vouch402's public activity feed (address, score, and signals). Defaults to false: the result stays attestation-only."
         ),
+      jurisdictionAttestation: z
+        .literal(true)
+        .describe(
+          "Required. Certifies that the caller (and whoever it's acting for) is not located in, and is not paying on behalf of anyone in, Cuba, Iran, North Korea, Syria, the Russian-occupied regions of Ukraine, or mainland China. The API rejects the request outright without this set to true; see the \"Restricted Jurisdictions\" section at https://www.vouch402.xyz/legal for the legal basis. This tool's caller is an autonomous agent, not a human clicking a checkbox, so this field *is* the checkbox for this flow: it must be set explicitly by whatever is invoking this tool, never assumed."
+        ),
     },
   },
-  async ({ address, quote, txHash, payer, baseUrl, makePublic }) => {
+  async ({ address, quote, txHash, payer, baseUrl, makePublic, jurisdictionAttestation }) => {
     try {
-      const result = await fetchScore(address, quote as X402Requirement, txHash, payer, { baseUrl, makePublic });
+      const result = await fetchScore(address, quote as X402Requirement, txHash, payer, {
+        baseUrl,
+        makePublic,
+        jurisdictionAttestation,
+      });
       // verifyAttestation only returns once it resolves a real, non-zero
       // attester on EAS (its own retry loop guards against a false
       // "not found" from public-RPC read-after-write lag); reaching this

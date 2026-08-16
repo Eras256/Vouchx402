@@ -64,7 +64,12 @@ describe("x402-SAP attestations (Base Sepolia)", () => {
     });
     await publicClientFor("base-sepolia").waitForTransactionReceipt({ hash: txHash });
 
-    const proof = { resourceId: requirement.extra.resourceId, txHash, payer: account.address };
+    const proof = {
+      resourceId: requirement.extra.resourceId,
+      txHash,
+      payer: account.address,
+      jurisdictionAttestation: true,
+    };
     const xPayment = Buffer.from(JSON.stringify(proof)).toString("base64");
 
     const fulfillRes = await fetch(`${baseUrl}/v1/risk-score/${targetAddress}`, {

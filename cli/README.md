@@ -19,7 +19,7 @@ npm install -g vouch402
 ## Usage
 
 ```bash
-vouch402 score 0x53a79B109fa77c05B043e73A284a22b57c6263b0
+vouch402 score 0x53a79B109fa77c05B043e73A284a22b57c6263b0 --attest-jurisdiction
 ```
 
 Prints the score, signals, payment transaction hash, attestation UID,
@@ -35,7 +35,7 @@ new`/`cast wallet import` writes:
 ```bash
 export VOUCH402_KEYSTORE_ACCOUNT=my-wallet
 export VOUCH402_KEYSTORE_PASSWORD=...
-vouch402 score 0x53a79B109fa77c05B043e73A284a22b57c6263b0
+vouch402 score 0x53a79B109fa77c05B043e73A284a22b57c6263b0 --attest-jurisdiction
 ```
 
 `VOUCH402_KEYSTORE_ACCOUNT` names a keystore under
@@ -55,10 +55,26 @@ Alternatively, `VOUCH402_KEYSTORE_JSON` accepts the keystore file's
 contents inline, useful in environments without a local
 `~/.foundry/keystores/` directory.
 
+### Jurisdiction attestation (required)
+
+```bash
+vouch402 score <address> --attest-jurisdiction
+```
+
+Required on every call: the API rejects the request outright without
+it. Certifies that you are not located in, and are not paying on
+behalf of anyone in, Cuba, Iran, North Korea, Syria, the Russian-
+occupied regions of Ukraine, or mainland China. See the "Restricted
+Jurisdictions" section at [vouch402.xyz/legal](https://www.vouch402.xyz/legal)
+for the legal basis behind each entry. This is the CLI's equivalent of
+the checkbox on the website's own "Try It" demo; there's no
+interactive prompt here on purpose, since this command also gets run
+non-interactively/by scripts.
+
 ### Pointing at a different server
 
 ```bash
-vouch402 score <address> --base-url https://your-instance.example
+vouch402 score <address> --attest-jurisdiction --base-url https://your-instance.example
 ```
 
 Defaults to the live Vouch402 instance (`https://vouch402.fly.dev`,
@@ -67,7 +83,7 @@ Base mainnet).
 ### Making a result public
 
 ```bash
-vouch402 score <address> --public
+vouch402 score <address> --attest-jurisdiction --public
 ```
 
 By default, a scored result is attestation-only on Vouch402's public
@@ -80,7 +96,7 @@ shown in full. Off unless you ask for it.
 ```bash
 npm install   # resolves vouch402-sdk from ../sdk
 npm run build
-node dist/index.js score <address> --base-url http://127.0.0.1:3402
+node dist/index.js score <address> --attest-jurisdiction --base-url http://127.0.0.1:3402
 ```
 
 ## License

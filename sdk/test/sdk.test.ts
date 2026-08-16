@@ -45,7 +45,7 @@ describe("vouch402-sdk (Base Sepolia, real payments)", () => {
     const { account } = loadDeployerAccount();
     const address = env.payTo;
 
-    const result = await getRiskScore(address, account, { baseUrl });
+    const result = await getRiskScore(address, account, { baseUrl, jurisdictionAttestation: true });
 
     expect(result.address.toLowerCase()).toBe(address.toLowerCase());
     expect(result.score).toBeGreaterThanOrEqual(0);
@@ -72,16 +72,18 @@ describe("vouch402-sdk (Base Sepolia, real payments)", () => {
 
     const quote = await getQuote(address, { baseUrl });
     const txHash = await pay(quote, account);
-    const first = await fetchScore(address, quote, txHash, account.address, { baseUrl });
+    const first = await fetchScore(address, quote, txHash, account.address, { baseUrl, jurisdictionAttestation: true });
     expect(first.score).toBeGreaterThanOrEqual(0);
 
-    await expect(fetchScore(address, quote, txHash, account.address, { baseUrl, maxAttempts: 1 })).rejects.toThrow();
+    await expect(
+      fetchScore(address, quote, txHash, account.address, { baseUrl, maxAttempts: 1, jurisdictionAttestation: true })
+    ).rejects.toThrow();
   }, 60_000);
 
   it("verifyAttestation resolves independently without needing a signer", async () => {
     const { account } = loadDeployerAccount();
     const address = env.payTo;
-    const result = await getRiskScore(address, account, { baseUrl, skipVerification: true });
+    const result = await getRiskScore(address, account, { baseUrl, skipVerification: true, jurisdictionAttestation: true });
 
     // No key/signer involved here at all, a pure read against EAS.
     const attestation = await verifyAttestation(result.attestationUid, "base-sepolia");

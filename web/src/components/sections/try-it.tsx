@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { BasePayButton } from "@base-org/account-ui/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNetwork } from "@/components/network-provider";
+import { useLocalePreference } from "@/components/locale-provider";
 import { useRiskScoreDemo } from "@/hooks/use-risk-score-demo";
 import { easExplorerUrl, basescanTxUrl, toApiNetwork } from "@/lib/vouch402";
 import { truncateHex } from "@/lib/format";
@@ -21,19 +23,34 @@ export function TryIt() {
   const tSelectors = useTranslations("selectors");
   const { theme } = useTheme();
   const { network } = useNetwork();
+  const { locale } = useLocalePreference();
+  // rehype-slug generates the heading id from the actual rendered text,
+  // which differs by language ("Restricted Jurisdictions" vs
+  // "Jurisdicciones Restringidas"): computed here so the link still
+  // deep-scrolls correctly regardless of which language is showing.
+  const restrictedJurisdictionsHref =
+    locale === "es" ? "/legal#5-jurisdicciones-restringidas" : "/legal#5-restricted-jurisdictions";
   const { phase, run, reset } = useRiskScoreDemo();
   const [address, setAddress] = useState(DEFAULT_ADDRESS);
   const [addressTouched, setAddressTouched] = useState(false);
   const [makePublic, setMakePublic] = useState(false);
+  const [jurisdictionAttestation, setJurisdictionAttestation] = useState(false);
+  const [attestationTouched, setAttestationTouched] = useState(false);
 
   const apiNetwork = toApiNetwork(network);
   const addressValid = ADDRESS_PATTERN.test(address.trim());
   const busy = phase.status !== "idle" && phase.status !== "done" && phase.status !== "error";
 
+  // Required, not optional like makePublic: the API rejects the paid
+  // retry outright without this set (see src/server/app.ts and
+  // web/content/legal-*.md, "Restricted Jurisdictions"), so the button
+  // itself stays inert rather than letting a real payment go through
+  // only to be turned away after the fact.
   function handlePayClick() {
     setAddressTouched(true);
-    if (!addressValid || busy) return;
-    void run(address.trim(), network, makePublic);
+    setAttestationTouched(true);
+    if (!addressValid || !jurisdictionAttestation || busy) return;
+    void run(address.trim(), network, makePublic, jurisdictionAttestation);
   }
 
   return (
@@ -75,6 +92,27 @@ export function TryIt() {
               />
               <span>{t("makePublicLabel")}</span>
             </label>
+
+            <label className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                required
+                checked={jurisdictionAttestation}
+                disabled={busy}
+                onChange={(e) => setJurisdictionAttestation(e.target.checked)}
+                onBlur={() => setAttestationTouched(true)}
+                className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary disabled:opacity-50"
+              />
+              <span>
+                {t("jurisdictionAttestationLabel")}{" "}
+                <Link href={restrictedJurisdictionsHref} className="text-primary hover:underline">
+                  {t("jurisdictionAttestationLink")}
+                </Link>
+              </span>
+            </label>
+            {attestationTouched && !jurisdictionAttestation && (
+              <p className="mt-1.5 text-xs text-error">{t("jurisdictionAttestationRequired")}</p>
+            )}
 
             <div className="mt-5">
               <BasePayButton colorScheme={(theme as "light" | "dark" | "system" | undefined) ?? "system"} onClick={handlePayClick} />

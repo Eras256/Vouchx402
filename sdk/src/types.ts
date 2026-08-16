@@ -48,6 +48,17 @@ export interface PaymentProof {
    * keeps the default: attestation-only, no visible signals. See the
    * main repo's DECISION_LOG.md, "dev wallet / opt-in public results". */
   makePublic?: boolean;
+  /** Required self-certification that the caller is not located in, and
+   * is not paying on behalf of anyone in, a Tier 1 restricted
+   * jurisdiction (Cuba, Iran, North Korea, Syria, the Russian-occupied
+   * regions of Ukraine, or mainland China). The API rejects the paid
+   * retry outright without this set to the literal `true`; there is no
+   * default. See the main repo's web/content/legal-*.md, "Restricted
+   * Jurisdictions", and DECISION_LOG.md for the full reasoning,
+   * including why this field exists at all: IP-based geo-blocking alone
+   * is inherently weaker for a programmatic, agent-called API than for
+   * a human browser flow. */
+  jurisdictionAttestation: boolean;
 }
 
 /** The X402ServiceFulfillment attestation's decoded on-chain fields, as
