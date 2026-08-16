@@ -2682,3 +2682,34 @@ URL still carrying no locale prefix, and `/en`/`/es` now 404. Repeated
 the same check against the mobile menu's language buttons and against
 `/legal`'s separate English-stub/Spanish-content branch (confirmed the
 banner and full document swap live too). All passed before pushing.
+
+## 2026-08-16: Legal section translated to English, same Mexico scope, not new jurisdictional coverage
+
+Follow-up to the `/en`/`/es` removal above: once the rest of the site
+switched language live, `/legal` staying stuck showing an English stub
+instead of the real document was the one visible inconsistency left.
+`content/legal-en.md` is a literal translation of `legal-es.md`, same
+sections, same citations, same 8 open questions for a lawyer, not a
+separate legal analysis for a different jurisdiction.
+
+Added one explicit line under the pending-review disclaimer, in the
+English version specifically, that the Spanish version didn't need to
+say for itself: this is a translation of Mexico-specific analysis
+(LFPIORPI, LFPDPPP, the authority that replaced INAI, UMA thresholds),
+and reading it in English doesn't mean it covers any other country's
+law. Cross-references section 2.7 and question 7, where that scope
+limitation was already documented, so it isn't a new claim, just made
+visible in the language a non-Mexican reader is most likely using.
+
+`legal/page.tsx` now reads both `legal-en.md` and `legal-es.md`
+server-side and hands both to `legal-content.tsx`, which picks one
+based on the live locale, same pattern the rest of the site uses.
+
+**Verified interactively before pushing, not just that the translation
+was written**: loaded `/legal` fresh (English by default) and confirmed
+the real document renders, not the old stub; confirmed the Mexico-scope
+line is present in the rendered HTML; clicked the language selector and
+confirmed the Spanish document renders with `Contenido` as its ToC
+label while the English one shows `Contents`, no navigation either way.
+Repeated the same checks against the live production deploy after
+pushing, not just the local build.
