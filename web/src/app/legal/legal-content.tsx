@@ -32,31 +32,21 @@ function PendingReviewBanner({ locale }: { locale: "en" | "es" }) {
   );
 }
 
-// The Spanish content is the real document (drafted for the Mexican
-// legal context specifically requested). English has no translation
-// yet: an honest stub instead of silently showing the Spanish legal
-// text to an English-reading visitor. Both branches are reached by
-// flipping the language selector live, no navigation.
-export function LegalContent({ markdown, toc }: { markdown: string; toc: TocEntry[] }) {
-  const { locale } = useLocalePreference();
+interface LocalizedDoc {
+  markdown: string;
+  toc: TocEntry[];
+}
 
-  if (locale !== "es") {
-    return (
-      <>
-        <PendingReviewBanner locale={locale} />
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24">
-          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Legal</h1>
-          <p className="prose-column mt-4 text-muted-foreground">
-            The privacy notice and terms are currently drafted for the Mexican legal context only, in Spanish, and
-            are still a review draft pending lawyer approval. An English version has not been written yet.
-          </p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Switch the language selector above to Español to read the current draft.
-          </p>
-        </div>
-      </>
-    );
-  }
+// legal-en.md is a literal translation of legal-es.md (same Mexico-
+// specific analysis, same open questions, same citations), not
+// separate coverage for another jurisdiction — each file says so
+// explicitly at the top, and the translation itself repeats the point
+// again in-page below. Switching between them is instant, reacting to
+// the live locale, no navigation.
+export function LegalContent({ content }: { content: Record<"en" | "es", LocalizedDoc> }) {
+  const { locale } = useLocalePreference();
+  const { markdown, toc } = content[locale];
+  const tocTitle = locale === "es" ? "Contenido" : "Contents";
 
   return (
     <>
@@ -75,7 +65,7 @@ export function LegalContent({ markdown, toc }: { markdown: string; toc: TocEntr
 
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <TableOfContents entries={toc} title="Contenido" />
+              <TableOfContents entries={toc} title={tocTitle} />
             </div>
           </aside>
         </div>
