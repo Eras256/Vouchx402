@@ -2713,3 +2713,172 @@ confirmed the Spanish document renders with `Contenido` as its ToC
 label while the English one shows `Contents`, no navigation either way.
 Repeated the same checks against the live production deploy after
 pushing, not just the local build.
+
+## 2026-08-16: Two-tier jurisdiction blocklist, Tier 1 hard-blocked, Tier 2 documented only
+
+The explicit design constraint going in: build a blocklist, not an
+allowlist. An allowlist (closed except pre-approved countries) doesn't
+scale and blocks real people with no actual finding against them.
+Vouch402 stays open by default; it closes only where there's a
+documented, specific legal reason, same posture as the rest of the
+project's compliance work.
+
+**Tier 1, prohibited, no exception.** Two separate baskets, kept
+separate because their legal basis is unrelated and merging the
+reasoning would misstate both:
+
+- OFAC comprehensive-sanctions coverage: Cuba, Iran, North Korea, Syria,
+  and the Russian-occupied regions of Ukraine (Crimea, Donetsk, Luhansk).
+  Checked this against the actual scope, not a generic "sanctioned
+  countries" list: Russia itself is **not** comprehensively embargoed,
+  only those occupied regions are, alongside the four countries under a
+  full embargo. Used the broadest of OFAC/EU/UN designations rather than
+  the narrowest, per the original instruction.
+- Mainland China, on its own legal basis, not folded into OFAC. The
+  request as given cited PBoC's September 2021 notice, 银发〔2021〕237号.
+  Fetched pbc.gov.cn directly rather than repeating the citation as
+  handed to me, and found a newer notice, **银发〔2026〕42号** (issued
+  February 6, 2026), that explicitly and formally repeals the 2021 one
+  ("同时废止"), corroborated independently by Sina Finance and Tencent
+  News coverage of the same repeal. Cited the 2026 notice, not the 2021
+  one, with an explicit correction note in the document itself explaining
+  why. Hong Kong, Macao, and Taiwan are explicitly carved out, since the
+  notice's extraterritorial reach is a mainland PBoC instrument, not one
+  those jurisdictions' own regulators issued.
+
+Mexico appears on neither tier. That's a deliberate omission, not an
+oversight: the operator's own Mexico exposure is a separate, already
+open question (the pending LFPIORPI/Acuerdo 115/2026 review and its 8
+open questions in `/legal` section 4), about who Vouch402 itself is
+allowed to operate as, not who Vouch402 is allowed to serve. Conflating
+the two would have quietly turned an operator-compliance question into a
+customer-restriction one with no legal basis for that leap.
+
+**Tier 2, restricted pending legal review, explicitly not a claim of
+illegality.** Starting point per the request: EU/EEA under MiCA, US under
+FinCEN plus state money-transmission regimes. Verified rather than
+copied from a generic "risk countries" list:
+
+- EU/EEA: MiCA's transitional period for crypto-asset service providers
+  ended July 1, 2026, so full licensing enforcement is now live
+  EU-wide. Whether accepting crypto payment for a non-custodial data
+  service even meets MiCA's definition of a regulated "crypto-asset
+  service" hasn't been reviewed yet, which is exactly the open question
+  Tier 2 exists to flag honestly rather than pre-answer.
+- US: FinCEN's 2019 CVC guidance (FIN-2019-G001) distinguishes a merchant
+  accepting crypto for its own goods/services from a money transmitter;
+  Vouch402 looks more like the former on its face, but state-level money
+  transmission licensing is its own patchwork independent of the federal
+  question, and neither has been reviewed jurisdiction by jurisdiction.
+
+Tier 2 is not blocked, technically or contractually. It's documented
+only, in `/legal` section 5.2, with the "not a claim of illegality, just
+that review hasn't happened yet" framing stated in the document itself,
+not left implicit.
+
+**Enforcement: two layers, neither one alone sufficient, for Tier 1
+only.**
+
+1. Technical: `src/lib/geoBlock.ts`, IPv4 CIDR matching against
+   ipdeny.com's free, commercially-redistributable per-country IP block
+   lists (`src/lib/geo-data/`, fetched 2026-08-16, see that directory's
+   own README for attribution and the documented limitation that
+   ipdeny's data is country-level, so it cannot isolate Crimea/Donetsk/
+   Luhansk from the rest of Russia/Ukraine at the IP level; that
+   sub-region carve-out exists in the legal text but not in the IP data).
+   Wired as Express middleware (`tier1GeoBlock`) on `/v1/risk-score` and
+   `/v1/disputes`, ahead of payment verification, reading `req.ip` via
+   `trust proxy`.
+2. Contractual: a required `jurisdictionAttestation` boolean on the
+   `X-PAYMENT` proof, checked with the same strict `=== true` pattern
+   already established for `makePublic`, not merely truthy. Threaded
+   through every programmatic surface that can reach the paid endpoint:
+   the SDK (`FetchScoreOptions.jurisdictionAttestation: boolean`,
+   required, no default), the CLI (`--attest-jurisdiction`, required
+   flag, `main()` exits with an error if it's missing), and the MCP
+   server (`z.literal(true)`, structurally stricter than `.boolean()`).
+   The one human-facing surface, the website's Try It demo, gets an
+   actual checkbox instead, gating the pay button, with an inline link to
+   `/legal#5-restricted-jurisdictions`.
+
+**Stated plainly in the document itself, not just here**: IP-based
+geoblocking on an endpoint that's mostly called programmatically by
+autonomous agents is structurally weaker than the same check on a human
+browser flow. An agent can run from a cloud VPS in any country regardless
+of where its operator actually is, and no IP check catches that. The
+attestation requirement exists precisely because the technical layer
+can't be airtight here, not as a redundant formality. `/legal` section
+5.3 says this outright rather than implying the geo-block alone is
+sufficient.
+
+**A different kind of gate than the Buró de Crédito rule** (the
+2026-08-16 entry above): that rule is about Vouch402 never issuing a
+verdict about a third party's trustworthiness for someone else's
+transaction. This one is an ordinary "who is allowed to be our customer"
+compliance decision, ordinary for any metered API, and doesn't touch what
+Vouch402 says about a scored address. Both rules stay in force
+simultaneously; worth stating explicitly so neither gets read as
+superseding the other.
+
+**Breaking change, versioned together per this repo's convention**:
+`vouch402-sdk`, `vouch402` (CLI), and `vouch402-mcp-server` all bumped
+0.2.0 to 0.3.0, since `jurisdictionAttestation` is a required field/flag
+in each, not optional. Matches the project's existing 0.x precedent of a
+MINOR bump for a breaking change (the `makePublic` 0.1.0 to 0.2.0
+rollout). `cli/node_modules/vouch402-sdk` and `mcp-server/node_modules/
+vouch402-sdk` are real installed copies from the registry, not symlinks
+to `../sdk`, so local SDK source edits didn't reach them for
+`tsc --noEmit` until their `dist` folders were manually replaced with a
+fresh local SDK build; that copy step is a local pre-publish
+type-checking workaround only, irrelevant to the real publish path.
+
+No npm publish credentials were available in this session
+(`npm whoami` returned `401 Unauthorized`), a genuine environmental
+constraint. All three packages are built, type-checked, and ready; the
+user will run the publishes themselves, in dependency order (SDK first,
+since both `cli` and `mcp-server` declare `"vouch402-sdk": "^0.3.0"`):
+
+```
+cd sdk && npm publish          # vouch402-sdk@0.3.0
+cd cli && npm publish          # vouch402@0.3.0
+cd mcp-server && npm publish   # vouch402-mcp-server@0.3.0
+```
+
+**Verified against the live, deployed surfaces, not just that the code
+was written and local tests passed.** Root `tsc --noEmit` clean, root
+`npm run build` confirmed `dist/lib/geo-data/*.json` present (the
+existing `resolveJsonModule` pattern from `flagged-addresses.json`
+carries over with no Dockerfile change needed, since the image runs its
+own `npm run build` from `COPY src ./src`). `vitest run test/server.test.ts
+-t "jurisdiction attestation|jurisdictionAttestation"` passed 3/3 new
+cases locally before deploying. Then, against `https://vouch402.fly.dev`
+after `fly deploy --app vouch402`:
+
+- `X-Forwarded-For: 175.45.176.1` (a real North Korea range from
+  `kp.json`) on `/v1/risk-score/:address` → `403`, "cannot serve requests
+  from North Korea."
+- `X-Forwarded-For: 152.206.0.1` (a real Cuba range from `cu.json`) →
+  `403`, "cannot serve requests from Cuba."
+- `X-Forwarded-For: 8.8.8.8` (unrelated US IP) → `402` with a normal
+  x402 quote, confirming open-by-default still holds for a non-Tier-1
+  IP, not just that Tier 1 blocks.
+- `X-PAYMENT` proof with no `jurisdictionAttestation` field → `403`,
+  "Missing required jurisdiction attestation."
+- Same proof with `jurisdictionAttestation: false` → `403`, confirming
+  the strict-boolean check, not merely-truthy.
+- Same proof with `jurisdictionAttestation: true` and a fake
+  `resourceId` → `402`, "Unknown or expired resourceId," confirming an
+  attested request actually reaches payment verification instead of
+  being over-blocked.
+
+And against `https://www.vouch402.xyz` after the Vercel deploy reached
+Ready: loaded `/legal` and confirmed `id="5-restricted-jurisdictions"`
+renders in the English document; switched language via the live
+dropdown (not a `/es` route, per the earlier locale-preference removal)
+and confirmed the same section renders in Spanish with the English
+heading no longer present in the DOM, matching the per-locale slug
+behavior already established for the rest of the document. On the
+homepage Try It demo: confirmed the jurisdiction checkbox renders
+unchecked by default, becomes checked on click, and the inline legal
+link resolves to `/legal#5-restricted-jurisdictions`, the exact anchor
+the section renders under.
