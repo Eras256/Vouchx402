@@ -2578,3 +2578,46 @@ pending-lawyer-review gate on the legal section above. Cheap to check at
 design time, expensive to unwind once other agents are depending on
 Vouch402 staying up to transact at all, which is the exact line this
 rule exists to keep Vouch402 on the correct side of.
+
+**Re-verified with a wider sweep before relying on it for the Términos
+draft**, since "checked once" and "confirmed" aren't the same claim.
+Extended the grep to `docs/TECHNICAL_SPEC.md`, `web/content/technical-
+spec.md`, `web/content/legal-es.md`, every `.tsx` under `web/src/
+components/pitch` and `web/src/components/sections` directly (not just
+the `messages/*.json` strings they read from, in case anything hardcodes
+copy outside the i18n layer), and `sdk/src/types.ts` in full (the
+canonical type definitions every package imports from, rather than
+re-checking each package's re-exports separately). Also widened the term
+list: `vouch(es|ed|ing)? for`, `guarantee`, `certif`, `blessed`, `sign.?
+off`, `greenlit`, `advice`, `should (proceed|transact)`. Still clean:
+the only two additional hits were both false positives, checked and
+dismissed with reasons, not silently skipped:
+
+- `hero.tsx`: an internal code comment about headline-copy design
+  ("...guidance."), not user-facing text.
+- `src/lib/db.ts`: "separate from attestations **on purpose**" (English
+  idiom, "deliberately"), not a `purpose` data field. Already the same
+  false positive the first pass caught in the same file.
+
+Two things worth recording even though neither needed a fix:
+
+- **The `flagged` field, reconsidered specifically against rule 5.**
+  `flagged: boolean` could plausibly read as a verdict rather than data.
+  Re-examined it deliberately: it names one specific, falsifiable fact
+  (membership on Vouch402's own bundled, versioned flag list), not a
+  holistic judgment, the same shape as a credit bureau reporting "this
+  identifier appears on watchlist X: yes/no" rather than "do not lend to
+  this person." Consistent with rule 2's own wording, which explicitly
+  permits "a number and signals." No change made; the distinction just
+  hadn't been stated explicitly anywhere before this.
+- **The project's own name.** "Vouch" ordinarily means to personally
+  guarantee someone's character or a claim's truth, in real tension with
+  "data, never a verdict." Noted here as an observed tension, not acted
+  on: renaming the project is a far bigger decision than what was asked
+  (audit the API/copy/schemas), and is the user's call to make
+  separately if it's ever worth revisiting, not something to decide
+  unilaterally while auditing.
+
+Net result of the deeper pass: no fix was required anywhere. The
+Términos "Descripción del Servicio" section can therefore describe the
+current, actually-verified mechanism as-is, not a corrected one.
