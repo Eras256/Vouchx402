@@ -2504,3 +2504,77 @@ and a pointer to this entry. No other file in the repo documented the
 broken form (checked via `grep -rn "cast wallet new"` across the whole
 tree; the other mentions in `src/lib/keystore.ts`/`cli/src/keystore.ts`
 are generic references, not a specific broken invocation).
+
+## 2026-08-16: Standing rule, the "Buró de Crédito" line — Vouch402 stays data, never the door
+
+Permanent design constraint, not a one-off decision, adopted ahead of
+Phase 3 (the trust/reputation layer) specifically because that's where
+it's cheapest to violate by accident and most expensive to unwind once
+real traffic depends on it. The framing: a credit bureau never opens the
+door for a loan, it only says the number; the bank opens the door.
+Vouch402 stays the bureau. Five concrete rules, each checked against the
+live surface today rather than assumed:
+
+1. **Only "query" verbs, never "connect"/"approve"/"execute."** Every
+   route in `src/server/app.ts`: `GET /`, `GET /v1/risk-score/:address`,
+   `GET /v1/metrics`, `GET /v1/activity`, `POST /v1/disputes`. The one
+   `POST` files a public dispute record (a complaint about past data
+   delivery), it doesn't make an operation happen between two agents.
+   Clean.
+2. **The decision stays with the caller.** Checked the actual response
+   shapes, not just the field list: `/v1/risk-score/:address` returns
+   `{ address, score, signals: { walletAgeDays, txCount,
+   uniqueContractInteractions, flagged }, attestationUid }`
+   (`src/server/app.ts`, `src/scoring/score.ts`). No `verdict`,
+   `recommendation`, `approved`, or `safeToTransact` field anywhere.
+   `flagged` is a specific, named signal (bundled flag-list membership),
+   not an overall judgment. `FulfillmentStatus` (`Fulfilled`/`Timeout`/
+   `Error`, `src/attestation/middleware.ts`) describes whether *Vouch402
+   itself* delivered its own data service, not a judgment about the
+   scored address.
+3. **The "if Vouch402 disappeared tomorrow" test.** Structurally true
+   today: Vouch402 is a standalone HTTP side-channel an agent may
+   optionally query before transacting elsewhere. It never relays,
+   escrows, signs, or gates any other party's transaction (see "Split
+   payTo (treasury) from the signer wallet" and the payment-verification
+   entries above: the only thing Vouch402's server key ever signs is its
+   own EAS attestations). Turning it off degrades information available
+   to a caller, it doesn't block anyone's ability to transact.
+4. **No transaction-context fields.** Grepped the full request/response
+   surface (`src/server/`, `sdk/src/`, `cli/src/`, `mcp-server/src/`,
+   `web/src/`) for `counterparty`, `transactionAmount`, `purpose`,
+   `otherParty`, and similar: zero matches outside one unrelated English
+   "on purpose" in a code comment. The only addresses that ever reach
+   the API are the one being scored and the one paying Vouch402 itself
+   for the lookup, never a third party the results are "for."
+5. **Vocabulary swept across the whole repo**, not just the API: site
+   copy (`web/messages/en.json`, How it works / Try it sections), the
+   plugin file (`plugins/vouch402.md`), and all three client packages'
+   source/tool descriptions. Grepped for `approv`, `green.?light`,
+   `recommend`, `safe to`, `cleared`, `verdict`, `authoriz`,
+   `trustworthy`, `gatekeep`, and similar. One surface hit, and it's the
+   right kind: `"Approve {amount} USDC to {payTo} in your wallet..."`
+   (Try It UI copy) describes the *caller's own wallet* approving its
+   own spend, standard Web3 UX language, not Vouch402 approving
+   anything. The MCP server's own tool description already states the
+   principle explicitly, predating this rule: `get_payment_quote`
+   "never pays on your behalf." The plugin file independently already
+   says "it does not return calldata for the caller to submit on its
+   own behalf" and warns not to present `score` as authoritative.
+   Everything else scanned clean was scanned, not assumed clean.
+
+The one prior-art data point behind rule 5 specifically: a sibling
+project (Nirium) hit the same failure mode with a `recommendation`
+field carrying `HOLD`/`EXECUTE` values, and the fix was replacing it
+with a `networkConditions` field carrying attributed raw data instead.
+The difference between "data" and "advice/permission" is often just the
+field name and the verbs in the response text, which is exactly why this
+is worth locking down in a naming/response-shape review before shipping,
+not after.
+
+**Going forward**: every new Phase 3 endpoint or response field gets
+checked against these five rules before it ships, same bar as the
+pending-lawyer-review gate on the legal section above. Cheap to check at
+design time, expensive to unwind once other agents are depending on
+Vouch402 staying up to transact at all, which is the exact line this
+rule exists to keep Vouch402 on the correct side of.
