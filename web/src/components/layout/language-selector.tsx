@@ -1,9 +1,8 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Languages } from "lucide-react";
-import { usePathname, Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
+import { useLocalePreference } from "@/components/locale-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +14,7 @@ import { Button } from "@/components/ui/button";
 const LABELS: Record<string, string> = { en: "English", es: "Español" };
 
 export function LanguageSelector({ compact = false }: { compact?: boolean }) {
-  const locale = useLocale();
-  const pathname = usePathname();
+  const { locale, setLocale, locales } = useLocalePreference();
   const t = useTranslations("selectors");
 
   return (
@@ -32,16 +30,10 @@ export function LanguageSelector({ compact = false }: { compact?: boolean }) {
         }
       />
       <DropdownMenuContent align={compact ? "start" : "end"}>
-        {routing.locales.map((loc) => (
-          <DropdownMenuItem
-            key={loc}
-            render={
-              // next-intl's Link swaps locale while preserving the current path
-              <Link href={pathname} locale={loc} aria-current={loc === locale ? "true" : undefined}>
-                {LABELS[loc] ?? loc}
-              </Link>
-            }
-          />
+        {locales.map((loc) => (
+          <DropdownMenuItem key={loc} onClick={() => setLocale(loc)} aria-current={loc === locale ? "true" : undefined}>
+            {LABELS[loc] ?? loc}
+          </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,6 +1,8 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 import { ArrowUpRight } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import { PitchSlide } from "./pitch-slide";
 
 const GITHUB_URL = "https://github.com/Eras256/Vouchx402";

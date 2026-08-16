@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
+"use client";
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
@@ -7,15 +7,16 @@ import rehypeHighlight from "rehype-highlight";
 import { AlertTriangle } from "lucide-react";
 import { markdownComponents } from "@/components/docs/markdown-components";
 import { TableOfContents } from "@/components/docs/table-of-contents";
-import { extractToc } from "@/lib/toc";
-import { Link } from "@/i18n/navigation";
+import { useLocalePreference } from "@/components/locale-provider";
+import type { TocEntry } from "@/lib/toc";
 
 // Rendered above the article itself, not inside the markdown flow, so
 // it's the first thing painted on the page rather than something a
 // visitor has to scroll past the title to reach. Kept as blunt as the
 // disclaimer text in the document body: this is a draft pending review,
-// not a softened "for informational purposes" footer note.
-function PendingReviewBanner({ locale }: { locale: string }) {
+// not a softened "for informational purposes" footer note. Reacts to
+// the live locale, same as everything else on this page now.
+function PendingReviewBanner({ locale }: { locale: "en" | "es" }) {
   const text =
     locale === "es"
       ? "Este documento es investigación técnico-regulatoria preliminar, no asesoría legal formal. Pendiente de revisión por un abogado mexicano con matrícula antes de considerarse definitivo."
@@ -31,23 +32,13 @@ function PendingReviewBanner({ locale }: { locale: string }) {
   );
 }
 
-// This page is currently drafted in Spanish only, for the Mexican legal
-// context specifically requested. It is still a review draft (see the
-// disclaimer at the top of the content itself) and is not represented
-// as final or lawyer-approved anywhere on the page.
-function readLegalContent(): string {
-  const contentPath = path.join(process.cwd(), "content", "legal-es.md");
-  return fs.readFileSync(contentPath, "utf-8");
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  const title = locale === "es" ? "Aviso de Privacidad y Términos" : "Legal";
-  return { title };
-}
-
-export default async function LegalPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+// The Spanish content is the real document (drafted for the Mexican
+// legal context specifically requested). English has no translation
+// yet: an honest stub instead of silently showing the Spanish legal
+// text to an English-reading visitor. Both branches are reached by
+// flipping the language selector live, no navigation.
+export function LegalContent({ markdown, toc }: { markdown: string; toc: TocEntry[] }) {
+  const { locale } = useLocalePreference();
 
   if (locale !== "es") {
     return (
@@ -59,16 +50,13 @@ export default async function LegalPage({ params }: { params: Promise<{ locale: 
             The privacy notice and terms are currently drafted for the Mexican legal context only, in Spanish, and
             are still a review draft pending lawyer approval. An English version has not been written yet.
           </p>
-          <Link href="/legal" locale="es" className="mt-4 inline-block text-primary hover:underline">
-            Ver la versión en español
-          </Link>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Switch the language selector above to Español to read the current draft.
+          </p>
         </div>
       </>
     );
   }
-
-  const markdown = readLegalContent();
-  const toc = extractToc(markdown);
 
   return (
     <>

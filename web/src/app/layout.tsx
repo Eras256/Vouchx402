@@ -1,14 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { notFound } from "next/navigation";
-import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LocaleProvider } from "@/components/locale-provider";
 import { NetworkProvider } from "@/components/network-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import "../globals.css";
+import "./globals.css";
 
 const DESCRIPTION =
   "x402-metered on-chain risk intelligence for autonomous agents on Base, with a built-in proof-of-fulfillment attestation layer.";
@@ -39,26 +37,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
-
-export default async function LocaleLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-
+// Language is a client-side preference now (LocaleProvider), not a URL
+// segment: `lang` starts at the site default (English) and is kept in
+// sync on the client as soon as a stored preference (or a switch) is
+// read; see locale-provider.tsx.
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body className="antialiased">
-        <NextIntlClientProvider>
+        <LocaleProvider>
           <ThemeProvider>
             <NetworkProvider>
               <div className="flex min-h-screen flex-col">
@@ -68,7 +55,7 @@ export default async function LocaleLayout({
               </div>
             </NetworkProvider>
           </ThemeProvider>
-        </NextIntlClientProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

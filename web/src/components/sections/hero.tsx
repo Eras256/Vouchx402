@@ -1,6 +1,8 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GithubIcon } from "@/components/layout/github-icon";

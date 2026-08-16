@@ -1,3 +1,5 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 import { ArrowUpRight } from "lucide-react";
 import { truncateHex } from "@/lib/format";

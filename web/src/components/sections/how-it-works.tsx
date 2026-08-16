@@ -1,3 +1,5 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 
 const STEP_KEYS = ["quote", "pay", "fulfill", "attest", "dispute"] as const;

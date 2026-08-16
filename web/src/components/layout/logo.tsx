@@ -1,4 +1,4 @@
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 
 // A fluted seal / medallion: the visual language of an official stamp
 // of attestation ("vouched for"), with the product's own defining

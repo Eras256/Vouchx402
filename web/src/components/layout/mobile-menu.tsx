@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { Menu, Sun, Moon, Monitor } from "lucide-react";
-import { Link, usePathname } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
+import Link from "next/link";
+import { useLocalePreference } from "@/components/locale-provider";
 import { useNetwork, type Network } from "@/components/network-provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -24,8 +24,7 @@ export function MobileMenu() {
   const [open, setOpen] = useState(false);
   const t = useTranslations("nav");
   const tSel = useTranslations("selectors");
-  const locale = useLocale();
-  const pathname = usePathname();
+  const { locale, setLocale, locales } = useLocalePreference();
   const { network, setNetwork } = useNetwork();
   const { theme, setTheme } = useTheme();
 
@@ -72,19 +71,16 @@ export function MobileMenu() {
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">{tSel("language")}</p>
             <div className="flex gap-2">
-              {routing.locales.map((loc) => (
+              {locales.map((loc) => (
                 <Button
                   key={loc}
                   variant={loc === locale ? "default" : "outline"}
                   size="sm"
                   className="flex-1"
-                  nativeButton={false}
-                  render={
-                    <Link href={pathname} locale={loc} onClick={() => setOpen(false)}>
-                      {LANGUAGE_LABELS[loc] ?? loc}
-                    </Link>
-                  }
-                />
+                  onClick={() => setLocale(loc)}
+                >
+                  {LANGUAGE_LABELS[loc] ?? loc}
+                </Button>
               ))}
             </div>
           </div>

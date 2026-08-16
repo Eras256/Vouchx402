@@ -1,5 +1,7 @@
+"use client";
+
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 
 const GITHUB_URL = "https://github.com/Eras256/Vouchx402";
 const API_URL = "https://vouch402.fly.dev";
