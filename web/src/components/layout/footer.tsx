@@ -25,6 +25,9 @@ export function Footer() {
           <Link href="/docs" className="text-muted-foreground transition-colors hover:text-foreground">
             {t("docs")}
           </Link>
+          <Link href="/legal" className="text-muted-foreground transition-colors hover:text-foreground">
+            {t("legal")}
+          </Link>
           <a
             href={`${GITHUB_URL}/blob/master/LICENSE`}
             target="_blank"
