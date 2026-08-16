@@ -2621,3 +2621,64 @@ Two things worth recording even though neither needed a fix:
 Net result of the deeper pass: no fix was required anywhere. The
 Términos "Descripción del Servicio" section can therefore describe the
 current, actually-verified mechanism as-is, not a corrected one.
+
+## 2026-08-16: `/en`, `/es` removed; language is now a live client-side preference, not a URL segment
+
+User request: both languages stay, English is the default, but no
+`/en`/`/es` prefix anywhere (`vouch402.xyz/` only) and the language
+selector switches the whole page instantly, no navigation, no reload.
+
+This meant replacing next-intl's URL-prefixed routing (`localePrefix:
+"always"`, a `[locale]` dynamic segment, `src/proxy.ts` doing the
+locale-detecting redirect, i.e. what Next 16 calls the old
+`middleware.ts`) with a purely client-side model: a new
+`LocaleProvider` (`src/components/locale-provider.tsx`), the same
+`useSyncExternalStore` + localStorage pattern `NetworkProvider` already
+established in this codebase, holding the locale in React state,
+feeding `NextIntlClientProvider` directly. Switching locale is a state
+write, not a route change.
+
+The real cost of "instant, no reload" specifically: every component
+that translates has to be a Client Component reading the live
+provider context, because a Server Component renders once per request
+and cannot react to client state at all. Converted the ones that
+weren't already (`footer.tsx`, all `pitch-*.tsx`, `how-it-works.tsx`,
+`api-reference.tsx`, `hero.tsx`, `docs`'s and `legal`'s chrome) from
+`getTranslations`/server-resolved `useTranslations` to plain
+`"use client"` + `useTranslations`. `docs/` and `legal/` each split
+into a server component (the `fs.readFileSync` of their markdown
+content, server-only) handing static `markdown`/`toc` down to a client
+component that renders it with live-translated chrome around it.
+`generateMetadata` (page `<title>`, OG tags) stayed hardcoded English:
+there's no per-request locale signal left for the pre-hydration shell,
+and English is the default anyway.
+
+Deleted outright rather than left half-wired: `src/proxy.ts`,
+`src/i18n/{routing,navigation,request}.ts`, and the `next-intl/plugin`
+wrapping in `next.config.ts` (all existed only to resolve locale
+per-request from the URL, which no longer happens).
+
+**A real bug surfaced and fixed along the way, not just a build
+annoyance suppressed**: the first build after this refactor printed
+`Error: ENVIRONMENT_FALLBACK` from `useTranslations` during static
+generation. Traced it to source (`use-intl`'s `react.js`, not guessed):
+it's next-intl's own warning for a missing `timeZone` on
+`NextIntlClientProvider`, which it flags because the server's local
+timezone and a visitor's browser timezone can otherwise differ and
+produce a real hydration mismatch. Confirmed nothing in this app
+formats dates through next-intl's own formatters (`recent-activity.tsx`
+uses `useLocale()` with the browser's own `Intl` APIs directly), then
+fixed it at the cause: pinned `timeZone="UTC"` on the provider. Build
+warning gone, not silenced.
+
+**Verified interactively, not just that the build succeeded**: wrote a
+real Playwright script (interacting with the running production build
+via `npm run start`, not just screenshotting) that clicks the language
+selector mid-session and checks: zero `framenavigated` events fired,
+the URL stays exactly `http://localhost:3000/` before and after,
+`<html lang>` flips from `en` to `es`, the visible hero tagline
+actually translates, the choice survives a full page reload with the
+URL still carrying no locale prefix, and `/en`/`/es` now 404. Repeated
+the same check against the mobile menu's language buttons and against
+`/legal`'s separate English-stub/Spanish-content branch (confirmed the
+banner and full document swap live too). All passed before pushing.
